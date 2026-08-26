@@ -1,0 +1,142 @@
+# World Data
+
+## Source
+
+The initial source is the `World Administrative Boundaries - Countries and
+Territories` dataset published by the World Food Programme and distributed by
+OpenDataSoft.
+
+- Dataset identifier: `world-administrative-boundaries`
+- Publisher: World Food Programme, a United Nations agency
+- License: Open Government Licence v3.0
+- Dataset records: 256
+- Geometry types: `Polygon` and `MultiPolygon`
+- Source metadata: <https://public.opendatasoft.com/explore/dataset/world-administrative-boundaries/information/>
+- Original publisher reference: <https://geonode.wfp.org/layers/geonode%3Awld_bnd_adm0_wfp>
+
+The repository must record the exact retrieval date and checksum when the
+source snapshot is added. Code remains MIT-licensed; source and transformed
+geographic data retain their applicable data license and attribution.
+
+## Observed Source Shape
+
+The available snapshot is approximately 8.61 MiB and contains 256 records,
+2,007 polygon components, and 217,141 coordinate positions. It has 141
+`Polygon` records and 115 `MultiPolygon` records. Not every record has a usable
+or unique ISO3 code, so the source cannot itself define the playable catalog.
+
+Each record contains geometry, a representative `geo_point_2d`, names, ISO
+codes, status, region, and ownership-related metadata. The generator must use a
+typed schema and reject unexpected required fields instead of parsing into an
+unstructured runtime value.
+
+## Catalog
+
+`data/countries.toml` defines the stable set of 195 playable countries and maps
+each one to a source geometry. It also defines canonical English names and
+aliases. Dataset records outside that catalog remain non-playable unless an
+explicit mapping says otherwise.
+
+Country identifiers are generated from catalog order and stored in a type large
+enough for reserved values. Water, neutral land, and invalid or missing data
+must not collide with playable identifiers.
+
+## Generation Pipeline
+
+```text
+source JSON
+  -> parse typed records
+  -> validate polygons and catalog mappings
+  -> normalize antimeridian behavior
+  -> retain identity per country or territory
+  -> rasterize country coverage and borders
+  -> select visual anchors
+  -> compute adjacency and distance matrix
+  -> validate all invariants
+  -> write versioned binary asset
+```
+
+## Architectural Ownership
+
+Source schemas, generator records, encoded asset sections, matrix indexes, and
+the runtime decoder are external data concerns. They live in the world-data
+tool or `infrastructure/world_data` and never become domain or application
+models.
+
+At runtime, `infrastructure/world_data/catalog.rs` and `proximity.rs` map the
+validated decoded data to domain values and implement the `CountryCatalog` and
+`CountryProximity` traits from `domain/ports/`. Raster cells, borders, and
+visual anchors remain read-only renderer data exposed by
+`infrastructure/world_data/map_data.rs`; they are not game-domain concepts.
+
+This boundary allows the asset encoding and serialization technology to change
+without changing game rules or application use cases.
+
+Countries must never be globally unioned into a single land geometry. That
+would discard political identity and shared borders.
+
+## Map Projection and Raster
+
+The MVP uses a Plate Carree/equirectangular world raster with longitude mapped
+linearly from -180 to 180 and latitude from 90 to -90. The initial internal
+resolution target is `720 x 360`, subject to measurement during iteration 003.
+
+Each raster sample stores a country or reserved land/water identifier. A border
+mask records transitions between different territories. Rasterization uses
+coverage or supersampling rather than testing only the center point, because a
+center-only low-resolution raster removes many small countries and islands.
+
+The raster is a rendering representation, not the source used for geographic
+distance. Reducing terminal resolution may still hide small countries, so each
+playable country also has a validated visual anchor that can be marked after it
+is guessed.
+
+## Visual Anchors
+
+An anchor is used for terminal markers and possible future labels. It is not a
+distance centroid. The preferred anchor is an interior point on the principal
+land component. The source `geo_point_2d` may be used only after validating its
+semantics and location. Exceptional archipelagos may require curated anchors.
+
+## Territorial Distance
+
+For playable countries `A` and `B`:
+
+```text
+distance(A, B) = minimum geodesic distance between any territory in A and B
+```
+
+All polygon components in the mapped country record participate. Separate
+dependency records are not automatically merged. Touching or overlapping
+territories are adjacent and have zero territorial separation.
+
+Euclidean distance in longitude and latitude is not valid for gameplay because
+it distorts high latitudes and fails at the antimeridian. The generator will
+use spherical or ellipsoidal geodesic calculations, densify long boundary
+segments, and use a spatial index to reduce candidate comparisons. The initial
+acceptable approximation target is within 10 km, to be confirmed against known
+and independently calculated cases.
+
+Distances are rounded to whole kilometers and stored in a symmetric
+`195 x 195` matrix of `u16` values. Adjacency is stored separately so the UI can
+show `Borders target` instead of `0 km` for an incorrect neighboring guess.
+
+## Required Invariants
+
+- Exactly 195 playable countries exist.
+- Every playable country resolves to valid geometry.
+- Canonical names, ISO3 values, and normalized aliases are unambiguous.
+- Every raster identifier is known or reserved.
+- Every playable country has a valid visual anchor.
+- Distance matrix dimensions match the catalog.
+- Distance is symmetric and every diagonal entry is zero.
+- Adjacency is symmetric.
+- Generation is deterministic.
+- Antimeridian cases do not receive artificial world-spanning distances.
+
+## Regeneration
+
+The generator will provide a normal mode that writes the asset and a `--check`
+mode that regenerates in memory and compares against the committed result. The
+exact Cargo command and asset format will be added when iteration 003 chooses
+the tool package name and serialization format.
