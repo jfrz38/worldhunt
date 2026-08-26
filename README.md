@@ -35,5 +35,6 @@ as the underlying tool when Make is unavailable.
 
 The crate follows the dependency direction `infrastructure -> application ->
 domain`; `src/main.rs` is only the composition root. Unit tests are colocated
-with their Rust modules under `#[cfg(test)]`. The root `tests/smoke.rs` target is
-reserved until a production-wiring smoke scenario can be implemented.
+with their Rust modules, in separate `tests.rs` files declared with
+`#[cfg(test)] mod tests;`. The root `tests/smoke.rs` target is reserved until a
+production-wiring smoke scenario can be implemented.

@@ -31,6 +31,12 @@ implementation, so all initial iterations start as `Planned`.
 9. Add newly discovered scope to a later iteration unless it is necessary to
    satisfy the active iteration's acceptance criteria.
 
+An implementation pull request keeps its iteration `In Progress` while the
+branch is under review. After the pull request is merged into `develop`, run the
+required checks on `develop` and update the iteration record and status table to
+`Completed` in a follow-up documentation change. This prevents a plan from
+claiming completion before its implementation is integrated and verified.
+
 Completed iteration records should only change to correct factual mistakes or
 add links to follow-up work.
 

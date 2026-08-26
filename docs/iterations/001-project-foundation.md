@@ -46,7 +46,8 @@ None. This is the first implementation iteration.
 - [x] Render a minimal placeholder that reports current terminal dimensions.
 - [x] Add unit tests for lifecycle behavior through an infrastructure-local
   terminal backend seam or test double.
-- [x] Document colocated `#[cfg(test)]` unit tests and reserve `tests/smoke.rs`
+- [x] Document colocated unit tests in separate `tests.rs` files and reserve
+  `tests/smoke.rs`
   for production-wiring smoke scenarios once the first one is implementable.
 - [x] Add GitHub Actions for format, Clippy, tests, and platform compilation.
 - [x] Update root README build and run instructions for the skeleton.
@@ -66,7 +67,8 @@ None. This is the first implementation iteration.
 - [x] The test layout uses only the unit and smoke categories defined in
   `docs/testing.md`.
 - [ ] Windows, Linux, and macOS compile checks pass in CI.
-- [ ] `docs/README.md` marks this iteration completed and iteration 002 next.
+- [ ] After merging into `develop`, `docs/README.md` marks this iteration
+  completed and iteration 002 next.
 
 ## Verification
 
@@ -88,6 +90,8 @@ None. This is the first implementation iteration.
 - Track each completed terminal setup step in an RAII session, restore in
   reverse order, attempt every cleanup step, and preserve the first cleanup
   error.
+- Keep unit tests in separate sibling `tests.rs` files while declaring them from
+  the production module with `#[cfg(test)] mod tests;`.
 
 ## Deviations
 

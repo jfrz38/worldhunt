@@ -20,18 +20,19 @@ separate test category.
 ## Rust Test Conventions
 
 The standard Rust test harness is the default framework. Unit tests live beside
-the production module they protect in a `#[cfg(test)] mod tests` block. This is
-the idiomatic Rust structure and lets tests exercise private behavior without
-making implementation details public.
+the production module they protect, in a separate `tests.rs` file declared with
+`#[cfg(test)] mod tests;`. This keeps implementation and test files readable
+while retaining the idiomatic Rust module relationship and access to private
+behavior without making implementation details public.
 
 Automated smoke tests live under the root `tests/` directory and exercise the
 crate through public or executable boundaries. The initial structure is:
 
 ```text
 src/
-|-- domain/                 # colocated unit tests
-|-- application/            # colocated unit tests with fake ports
-`-- infrastructure/         # colocated unit tests and test backends
+|-- domain/                 # production modules and sibling tests.rs files
+|-- application/            # production modules and sibling tests.rs files
+`-- infrastructure/         # production modules and sibling tests.rs files
 tests/
 |-- smoke.rs                # Cargo smoke-test target
 `-- smoke/                  # smoke scenarios and shared helpers
@@ -39,7 +40,10 @@ tools/world-data/
 `-- src/                    # colocated generator unit tests
 ```
 
-Test modules mirror the production modules they protect. Shared test helpers
+Test modules mirror the production modules they protect. For example, a module
+at `src/infrastructure/tui/terminal.rs` keeps its unit tests at
+`src/infrastructure/tui/terminal/tests.rs`, while `src/infrastructure/tui/mod.rs`
+keeps them at `src/infrastructure/tui/tests.rs`. Shared test helpers
 should be introduced only when they remove meaningful duplication and must
 remain close to the tests that use them. Test-only data files may live in a
 clearly named `testdata/` directory beside the relevant package.
