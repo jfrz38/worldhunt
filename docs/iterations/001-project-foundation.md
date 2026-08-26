@@ -1,8 +1,8 @@
 # Iteration 001: Project Foundation
 
-Status: In Progress
+Status: Completed
 Started: 2026-08-26
-Completed:
+Completed: 2026-08-27
 
 ## Goal
 
@@ -54,7 +54,7 @@ None. This is the first implementation iteration.
 
 ## Acceptance Criteria
 
-- [ ] `cargo run` opens the alternate screen and renders without busy-looping.
+- [x] `cargo run` opens the alternate screen and renders without busy-looping.
 - [x] `Esc` and `Ctrl+C` exit cleanly.
 - [x] Resize events redraw without terminating the process.
 - [x] Raw mode, screen, cursor, and related terminal state are restored on every
@@ -66,8 +66,8 @@ None. This is the first implementation iteration.
 - [x] Format, Clippy with warnings denied, and all tests pass.
 - [x] The test layout uses only the unit and smoke categories defined in
   `docs/testing.md`.
-- [ ] Windows, Linux, and macOS compile checks pass in CI.
-- [ ] After merging into `develop`, `docs/README.md` marks this iteration
+- [x] Windows, Linux, and macOS compile checks pass in CI.
+- [x] After merging into `develop`, `docs/README.md` marks this iteration
   completed and iteration 002 next.
 
 ## Verification
@@ -80,8 +80,10 @@ None. This is the first implementation iteration.
   workspace targets.
 - Import review: passed; domain and application contain no infrastructure or
   terminal-library imports.
-- Manual terminal interaction and the GitHub Actions platform matrix remain
-  pending.
+- Manual terminal interaction: passed locally; the placeholder rendered and
+  `Esc` restored the terminal.
+- GitHub Actions platform matrix: passed before integration.
+- Post-merge `make check`: passed locally.
 
 ## Decisions
 
@@ -99,4 +101,5 @@ None yet.
 
 ## Outcome
 
-Pending.
+The project foundation is complete. Iteration 002 can add world-data tooling
+without adding generator models to the runtime crate.

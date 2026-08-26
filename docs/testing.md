@@ -191,11 +191,12 @@ make check
 `make test` runs all unit tests and the automated smoke target. `cargo test
 --test smoke` may be used during development to run only smoke scenarios. The
 smoke target is added when its first automated scenario exists.
-Exact package and command names may be updated when the Cargo workspace is
-created. CI must compile the application on Windows, Linux, and macOS. Data
-generation may run on one pinned environment if cross-platform floating-point
-differences prevent byte-identical output; any such restriction must be
-documented rather than hidden.
+`make check` also runs `cargo run -p world-data -- validate`, which validates
+the committed catalog and source snapshot. Asset generation and its `--check`
+mode are added in iteration 003. CI must compile the application on Windows,
+Linux, and macOS. Data generation may run on one pinned environment if
+cross-platform floating-point differences prevent byte-identical output; any
+such restriction must be documented rather than hidden.
 
 ## Performance Checks
 
