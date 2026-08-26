@@ -1,15 +1,21 @@
 name: CI
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
+    branches: [develop, main]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 env:
   CARGO_TERM_COLOR: always
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality:
@@ -20,18 +26,36 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.88.0
         with:
           components: clippy, rustfmt
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: make check
 
-  compile:
-    name: Compile (${{ matrix.os }})
+  portability:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main')
+    name: Portability (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       # GNU Make is not guaranteed on Windows runners; keep this portable check
       # directly on Cargo while the quality job exercises the Makefile contract.
-      - run: cargo check --all-targets --all-features --locked
+      - run: cargo check --workspace --all-targets --all-features --locked
