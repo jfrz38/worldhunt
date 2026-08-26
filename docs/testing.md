@@ -20,18 +20,19 @@ separate test category.
 ## Rust Test Conventions
 
 The standard Rust test harness is the default framework. Unit tests live beside
-the production module they protect in a `#[cfg(test)] mod tests` block. This is
-the idiomatic Rust structure and lets tests exercise private behavior without
-making implementation details public.
+the production module they protect, in a separate `tests.rs` file declared with
+`#[cfg(test)] mod tests;`. This keeps implementation and test files readable
+while retaining the idiomatic Rust module relationship and access to private
+behavior without making implementation details public.
 
 Automated smoke tests live under the root `tests/` directory and exercise the
 crate through public or executable boundaries. The initial structure is:
 
 ```text
 src/
-|-- domain/                 # colocated unit tests
-|-- application/            # colocated unit tests with fake ports
-`-- infrastructure/         # colocated unit tests and test backends
+|-- domain/                 # production modules and sibling tests.rs files
+|-- application/            # production modules and sibling tests.rs files
+`-- infrastructure/         # production modules and sibling tests.rs files
 tests/
 |-- smoke.rs                # Cargo smoke-test target
 `-- smoke/                  # smoke scenarios and shared helpers
@@ -39,7 +40,10 @@ tools/world-data/
 `-- src/                    # colocated generator unit tests
 ```
 
-Test modules mirror the production modules they protect. Shared test helpers
+Test modules mirror the production modules they protect. For example, a module
+at `src/infrastructure/tui/terminal.rs` keeps its unit tests at
+`src/infrastructure/tui/terminal/tests.rs`, while `src/infrastructure/tui/mod.rs`
+keeps them at `src/infrastructure/tui/tests.rs`. Shared test helpers
 should be introduced only when they remove meaningful duplication and must
 remain close to the tests that use them. Test-only data files may live in a
 clearly named `testdata/` directory beside the relevant package.
@@ -175,21 +179,18 @@ Every iteration reviews these rules when adding or moving modules.
 
 ## Quality Commands
 
-Cargo is the source of truth for test execution. A Makefile or other task runner
-may wrap these commands later, but is not required by the testing strategy.
+The repository Makefile is the canonical development interface. Cargo remains
+the underlying test runner and can be used directly when Make is unavailable.
 
 The expected baseline is:
 
 ```text
-cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --workspace
-cargo run -p world-data -- --check
+make check
 ```
 
-`cargo test --workspace` runs all unit tests and the automated smoke target.
-`cargo test --test smoke` may be used during development to run only smoke
-scenarios. The smoke target is added when its first automated scenario exists.
+`make test` runs all unit tests and the automated smoke target. `cargo test
+--test smoke` may be used during development to run only smoke scenarios. The
+smoke target is added when its first automated scenario exists.
 Exact package and command names may be updated when the Cargo workspace is
 created. CI must compile the application on Windows, Linux, and macOS. Data
 generation may run on one pinned environment if cross-platform floating-point
