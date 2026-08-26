@@ -5,9 +5,9 @@ design, architectural decisions, and implementation progress.
 
 ## Current Status
 
-- Project phase: planning
-- Active iteration: none
-- Next iteration: [001 - Project foundation](iterations/001-project-foundation.md)
+- Project phase: implementation
+- Active iteration: [001 - Project foundation](iterations/001-project-foundation.md)
+- Next iteration: [002 - Country catalog](iterations/002-country-catalog.md)
 - MVP target: a fully local, cross-platform terminal geography game
 
 Only one iteration may be `In Progress` at a time. An iteration becomes active
@@ -36,7 +36,7 @@ when implementation starts, not when its plan is written.
 
 | Iteration | Goal | Status |
 | --- | --- | --- |
-| [001](iterations/001-project-foundation.md) | Establish the Rust project and safe terminal lifecycle | Planned |
+| [001](iterations/001-project-foundation.md) | Establish the Rust project and safe terminal lifecycle | In Progress |
 | [002](iterations/002-country-catalog.md) | Define countries, aliases, provenance, and licenses | Planned |
 | [003](iterations/003-map-data-generator.md) | Generate an identity-preserving world raster | Planned |
 | [004](iterations/004-distance-calculation.md) | Precompute territorial distances and adjacency | Planned |

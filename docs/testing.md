@@ -175,21 +175,18 @@ Every iteration reviews these rules when adding or moving modules.
 
 ## Quality Commands
 
-Cargo is the source of truth for test execution. A Makefile or other task runner
-may wrap these commands later, but is not required by the testing strategy.
+The repository Makefile is the canonical development interface. Cargo remains
+the underlying test runner and can be used directly when Make is unavailable.
 
 The expected baseline is:
 
 ```text
-cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --workspace
-cargo run -p world-data -- --check
+make check
 ```
 
-`cargo test --workspace` runs all unit tests and the automated smoke target.
-`cargo test --test smoke` may be used during development to run only smoke
-scenarios. The smoke target is added when its first automated scenario exists.
+`make test` runs all unit tests and the automated smoke target. `cargo test
+--test smoke` may be used during development to run only smoke scenarios. The
+smoke target is added when its first automated scenario exists.
 Exact package and command names may be updated when the Cargo workspace is
 created. CI must compile the application on Windows, Linux, and macOS. Data
 generation may run on one pinned environment if cross-platform floating-point

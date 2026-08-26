@@ -1,7 +1,7 @@
 # Iteration 001: Project Foundation
 
-Status: Planned  
-Started:  
+Status: In Progress
+Started: 2026-08-26
 Completed:
 
 ## Goal
@@ -31,50 +31,63 @@ None. This is the first implementation iteration.
 
 ## Tasks
 
-- [ ] Create the root `Cargo.toml` and select the Rust edition and toolchain
+- [x] Create the root `Cargo.toml` and select the Rust edition and toolchain
   policy.
-- [ ] Add a repository `.gitignore` and any minimal formatter or lint settings.
-- [ ] Add `src/lib.rs`, `src/main.rs`, and the initial `domain`, `application`,
+- [x] Add a repository `.gitignore` and any minimal formatter or lint settings.
+- [x] Add `src/lib.rs`, `src/main.rs`, and the initial `domain`, `application`,
   and `infrastructure` modules described in `docs/architecture.md`.
-- [ ] Keep `main.rs` as the composition root and document the enforced
+- [x] Keep `main.rs` as the composition root and document the enforced
   `infrastructure -> application -> domain` dependency direction.
-- [ ] Add Ratatui and Crossterm with only required features.
-- [ ] Implement guarded terminal initialization and idempotent restoration.
-- [ ] Restore completed setup steps if a later initialization step fails.
-- [ ] Restore the terminal after normal exit, application error, and panic.
-- [ ] Implement a blocking event loop with `Esc`, `Ctrl+C`, and resize handling.
-- [ ] Render a minimal placeholder that reports current terminal dimensions.
-- [ ] Add unit tests for lifecycle behavior through an infrastructure-local
+- [x] Add Ratatui and Crossterm with only required features.
+- [x] Implement guarded terminal initialization and idempotent restoration.
+- [x] Restore completed setup steps if a later initialization step fails.
+- [x] Restore the terminal after normal exit, application error, and panic.
+- [x] Implement a blocking event loop with `Esc`, `Ctrl+C`, and resize handling.
+- [x] Render a minimal placeholder that reports current terminal dimensions.
+- [x] Add unit tests for lifecycle behavior through an infrastructure-local
   terminal backend seam or test double.
-- [ ] Document colocated `#[cfg(test)]` unit tests and reserve `tests/smoke.rs`
+- [x] Document colocated `#[cfg(test)]` unit tests and reserve `tests/smoke.rs`
   for production-wiring smoke scenarios once the first one is implementable.
-- [ ] Add GitHub Actions for format, Clippy, tests, and platform compilation.
-- [ ] Update root README build and run instructions for the skeleton.
+- [x] Add GitHub Actions for format, Clippy, tests, and platform compilation.
+- [x] Update root README build and run instructions for the skeleton.
 
 ## Acceptance Criteria
 
 - [ ] `cargo run` opens the alternate screen and renders without busy-looping.
-- [ ] `Esc` and `Ctrl+C` exit cleanly.
-- [ ] Resize events redraw without terminating the process.
-- [ ] Raw mode, screen, cursor, and related terminal state are restored on every
+- [x] `Esc` and `Ctrl+C` exit cleanly.
+- [x] Resize events redraw without terminating the process.
+- [x] Raw mode, screen, cursor, and related terminal state are restored on every
   tested exit path.
-- [ ] Domain and application modules can be imported through the library crate
+- [x] Domain and application modules can be imported through the library crate
   without exposing Ratatui, Crossterm, or other infrastructure types.
-- [ ] Import review confirms that domain and application do not depend on
+- [x] Import review confirms that domain and application do not depend on
   infrastructure modules.
-- [ ] Format, Clippy with warnings denied, and all tests pass.
-- [ ] The test layout uses only the unit and smoke categories defined in
+- [x] Format, Clippy with warnings denied, and all tests pass.
+- [x] The test layout uses only the unit and smoke categories defined in
   `docs/testing.md`.
 - [ ] Windows, Linux, and macOS compile checks pass in CI.
 - [ ] `docs/README.md` marks this iteration completed and iteration 002 next.
 
 ## Verification
 
-Not run; iteration has not started.
+- `cargo fmt --check`: passed locally.
+- `cargo clippy --all-targets --all-features -- -D warnings`: passed locally.
+- `cargo test --workspace`: passed locally; 10 unit tests.
+- `cargo check --all-targets --all-features`: passed locally on Windows.
+- `make check` and `make ci`: passed locally; the latter also builds all
+  workspace targets.
+- Import review: passed; domain and application contain no infrastructure or
+  terminal-library imports.
+- Manual terminal interaction and the GitHub Actions platform matrix remain
+  pending.
 
 ## Decisions
 
-None yet.
+- Use Rust edition 2024 with Rust 1.88.0 as the pinned repository toolchain and
+  minimum supported version, matching Ratatui's minimum supported Rust version.
+- Track each completed terminal setup step in an RAII session, restore in
+  reverse order, attempt every cleanup step, and preserve the first cleanup
+  error.
 
 ## Deviations
 
