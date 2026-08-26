@@ -1,5 +1,5 @@
-# Country Guess TUI
+# WorldHunt
 
-`country-guess-tui` is a terminal geography game where you try to discover a hidden country by guessing other countries and using their distance as a clue.
+`worldhunt` is a hot-and-cold geography guessing game for your terminal.
 
-Guessed countries are highlighted on an interactive world map, getting visually closer to the target as you play.
+Guess countries, use their distance to narrow down the hidden target, and watch your attempts get highlighted on an interactive world map as you get closer.
