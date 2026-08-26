@@ -26,7 +26,10 @@ lint: ## run Clippy with warnings denied
 test: ## run all workspace tests
 	$(CARGO) test --workspace
 
-.PHONY: check ci
-check: fmt-check lint test ## run all local quality checks
+.PHONY: data-validate check ci
+data-validate: ## validate the committed country catalog and source snapshot
+	$(CARGO) run -p world-data -- validate
+
+check: fmt-check lint test data-validate ## run all local quality checks
 
 ci: check build ## run the deterministic CI checks

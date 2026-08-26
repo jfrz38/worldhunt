@@ -1,0 +1,10 @@
+# This checksum covers the raw bytes of world-boundaries.json.
+dataset_id = "world-administrative-boundaries"
+retrieved_on = "2026-08-27"
+download_url = "https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/world-administrative-boundaries/exports/geojson"
+metadata_url = "https://public.opendatasoft.com/explore/dataset/world-administrative-boundaries/information/"
+publisher = "World Food Programme (UN agency)"
+license = "Open Government Licence v3.0"
+license_url = "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+record_count = 256
+sha256 = "fabbb96742b91183f4964d94e9dca7be654e32d2beb0c4cf7450d7f185093eee"

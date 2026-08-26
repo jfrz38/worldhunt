@@ -38,3 +38,10 @@ domain`; `src/main.rs` is only the composition root. Unit tests are colocated
 with their Rust modules, in separate `tests.rs` files declared with
 `#[cfg(test)] mod tests;`. The root `tests/smoke.rs` target is reserved until a
 production-wiring smoke scenario can be implemented.
+
+## Geographic Data
+
+The code is MIT licensed. The committed geographic source snapshot and its
+derivatives have their own licence and attribution requirements; see
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) and the metadata beside the
+snapshot in `data/source/`.

@@ -7,7 +7,7 @@ description = "A hot-and-cold geography guessing game for the terminal"
 license = "MIT"
 
 [workspace]
-members = ["."]
+members = [".", "tools/world-data"]
 resolver = "3"
 
 [dependencies]
