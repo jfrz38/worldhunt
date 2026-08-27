@@ -117,7 +117,7 @@ pub(super) fn boolean_property(layer: &Layer, feature: &Feature, name: &str) -> 
         let key = layer.keys.get(tag[0] as usize)?;
         (key == name).then(|| {
             let value = layer.values.get(tag[1] as usize)?;
-            value.bool_value.or_else(|| value.uint_value.map(|value| value != 0))
+            value.bool_value.or_else(|| value.uint_value.map(|value| value != 0)).or_else(|| value.sint_value.map(|value| value != 0))
         })?
     })
 }

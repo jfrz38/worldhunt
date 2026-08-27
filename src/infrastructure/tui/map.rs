@@ -14,6 +14,7 @@ const SOUTH: f64 = 0.6887;
 const LAND_COLOR: Color = Color::Rgb(93, 105, 112);
 const WATER_COLOR: Color = Color::Rgb(8, 24, 42);
 const BORDER_COLOR: Color = Color::Rgb(37, 48, 56);
+const DETAIL_ZOOM: f64 = 0.5;
 
 pub(super) struct Map {
     zoom: f64,
@@ -21,6 +22,7 @@ pub(super) struct Map {
     center_y: f64,
     zoom_zero: Tile,
     zoom_one: [Tile; 4],
+    details: MapDetails,
 }
 
 impl Map {
@@ -36,6 +38,7 @@ impl Map {
                 mvt::decode(include_bytes!("../../../data/source/openstreetmap/1_0_1.pbf.gz"))?,
                 mvt::decode(include_bytes!("../../../data/source/openstreetmap/1_1_1.pbf.gz"))?,
             ],
+            details: MapDetails::decode(include_bytes!("../../../assets/map-details-v1.bin"))?,
         })
     }
 
@@ -67,6 +70,9 @@ impl Map {
         for (tile, tile_x, tile_y, zoom) in self.active_tiles() {
             draw_tile(&mut dots, dot_width, dot_height, tile, tile_x, tile_y, zoom, self.center_x, self.center_y, scale);
         }
+        if self.zoom >= DETAIL_ZOOM {
+            self.details.draw(&mut dots, dot_width, dot_height, self.center_x, self.center_y, scale);
+        }
         render_dots(&dots, dot_width, area, rows, buffer);
         render_status(area, buffer, self.zoom);
     }
@@ -83,6 +89,128 @@ impl Map {
             ]
         }
     }
+}
+
+struct MapDetails {
+    islands: Vec<Vec<(f64, f64)>>,
+    western_sahara_border: Vec<(f64, f64)>,
+}
+
+impl MapDetails {
+    fn decode(bytes: &[u8]) -> Result<Self, String> {
+        if bytes.get(..4) != Some(b"WHDL") || read_u16(bytes, 4)? != 1 {
+            return Err("map detail asset has an invalid header".to_owned());
+        }
+        let island_count = usize::from(read_u16(bytes, 6)?);
+        let mut offset = 8;
+        let mut islands = Vec::with_capacity(island_count);
+        for _ in 0..island_count {
+            islands.push(read_points(bytes, &mut offset)?);
+        }
+        let western_sahara_border = read_points(bytes, &mut offset)?;
+        if offset != bytes.len() || islands.len() != 7 || western_sahara_border.len() != 15 {
+            return Err("map detail asset has unexpected geometry".to_owned());
+        }
+        Ok(Self { islands, western_sahara_border })
+    }
+
+    fn draw(&self, dots: &mut [u8], width: usize, height: usize, center_x: f64, center_y: f64, scale: f64) {
+        for island in &self.islands {
+            fill_geographic_land(dots, width, height, island, center_x, center_y, scale);
+        }
+        draw_geographic_path(dots, width, height, &self.western_sahara_border, center_x, center_y, scale);
+    }
+}
+
+fn fill_geographic_land(dots: &mut [u8], width: usize, height: usize, polygon: &[(f64, f64)], center_x: f64, center_y: f64, scale: f64) {
+    let mut ring = polygon.iter().copied()
+        .map(|point| project_geographic_point(point, width, height, center_x, center_y, scale))
+        .collect::<Vec<_>>();
+    let Some(&first) = ring.first() else { return };
+    ring.push(first);
+
+    for y in 0..height {
+        let mut intersections = ring_intersections(&ring, y as f64 + 0.5);
+        intersections.sort_by(f64::total_cmp);
+        for pair in intersections.chunks_exact(2) {
+            let start = pair[0].floor().max(0.0) as usize;
+            let end = pair[1].ceil().min(width as f64) as usize;
+            for x in start..end {
+                clear_water(dots, width, x as i32, y as i32);
+            }
+        }
+    }
+    for edge in ring.windows(2) {
+        clear_water_line(dots, width, edge[0], edge[1]);
+    }
+}
+
+fn draw_geographic_path(dots: &mut [u8], width: usize, height: usize, points: &[(f64, f64)], center_x: f64, center_y: f64, scale: f64) {
+    for edge in points.windows(2) {
+        let from = project_geographic_point(edge[0], width, height, center_x, center_y, scale);
+        let to = project_geographic_point(edge[1], width, height, center_x, center_y, scale);
+        draw_line(dots, width, height, from, to, BORDER);
+    }
+}
+
+fn project_geographic_point((longitude, latitude): (f64, f64), width: usize, height: usize, center_x: f64, center_y: f64, scale: f64) -> (i32, i32) {
+    let world_x = (longitude + 180.0) / 360.0;
+    let latitude = latitude.to_radians();
+    let world_y = (1.0 - (latitude.tan() + latitude.cos().recip()).ln() / std::f64::consts::PI) / 2.0;
+    ((width as f64 / 2.0 + (world_x - center_x) * scale).round() as i32, (height as f64 / 2.0 + (world_y - center_y) * scale).round() as i32)
+}
+
+fn clear_water_line(dots: &mut [u8], width: usize, from: (i32, i32), to: (i32, i32)) {
+    let (mut x, mut y) = from;
+    let (x1, y1) = to;
+    let dx = (x1 - x).abs();
+    let dy = -(y1 - y).abs();
+    let sx = if x < x1 { 1 } else { -1 };
+    let sy = if y < y1 { 1 } else { -1 };
+    let mut error = dx + dy;
+    loop {
+        clear_water(dots, width, x, y);
+        if x == x1 && y == y1 { return; }
+        let doubled = error * 2;
+        if doubled >= dy { error += dy; x += sx; }
+        if doubled <= dx { error += dx; y += sy; }
+    }
+}
+
+fn clear_water(dots: &mut [u8], width: usize, x: i32, y: i32) {
+    if x >= 0 && y >= 0 && (x as usize) < width && (y as usize) < dots.len() / width {
+        let dot = &mut dots[y as usize * width + x as usize];
+        if *dot == WATER {
+            *dot = 0;
+        }
+    }
+}
+
+fn read_u16(bytes: &[u8], offset: usize) -> Result<u16, String> {
+    bytes.get(offset..offset + 2)
+        .and_then(|value| value.try_into().ok())
+        .map(u16::from_le_bytes)
+        .ok_or_else(|| "map detail asset is truncated".to_owned())
+}
+
+fn read_i32(bytes: &[u8], offset: usize) -> Result<i32, String> {
+    bytes.get(offset..offset + 4)
+        .and_then(|value| value.try_into().ok())
+        .map(i32::from_le_bytes)
+        .ok_or_else(|| "map detail asset is truncated".to_owned())
+}
+
+fn read_points(bytes: &[u8], offset: &mut usize) -> Result<Vec<(f64, f64)>, String> {
+    let count = usize::from(read_u16(bytes, *offset)?);
+    *offset += 2;
+    let mut points = Vec::with_capacity(count);
+    for _ in 0..count {
+        let longitude = f64::from(read_i32(bytes, *offset)?) / 1_000_000.0;
+        let latitude = f64::from(read_i32(bytes, *offset + 4)?) / 1_000_000.0;
+        *offset += 8;
+        points.push((longitude, latitude));
+    }
+    Ok(points)
 }
 
 fn draw_tile(dots: &mut [u8], width: usize, height: usize, tile: &Tile, tile_x: u32, tile_y: u32, zoom: u32, center_x: f64, center_y: f64, scale: f64) {
