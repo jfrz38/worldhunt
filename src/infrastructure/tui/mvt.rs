@@ -48,7 +48,8 @@ pub(super) fn decode(bytes: &[u8]) -> Result<Tile, String> {
     GzDecoder::new(bytes)
         .read_to_end(&mut decoded)
         .map_err(|error| format!("could not decompress vector tile: {error}"))?;
-    Tile::decode(decoded.as_slice()).map_err(|error| format!("could not decode vector tile: {error}"))
+    Tile::decode(decoded.as_slice())
+        .map_err(|error| format!("could not decode vector tile: {error}"))
 }
 
 pub(super) fn decode_geometry(commands: &[u32]) -> Vec<Vec<(i32, i32)>> {
@@ -107,7 +108,9 @@ pub(super) fn unsigned_property(layer: &Layer, feature: &Feature, name: &str) ->
         let key = layer.keys.get(tag[0] as usize)?;
         (key == name).then(|| {
             let value = layer.values.get(tag[1] as usize)?;
-            value.uint_value.or_else(|| value.sint_value.and_then(|value| u32::try_from(value).ok()))
+            value
+                .uint_value
+                .or_else(|| value.sint_value.and_then(|value| u32::try_from(value).ok()))
         })?
     })
 }
@@ -117,7 +120,10 @@ pub(super) fn boolean_property(layer: &Layer, feature: &Feature, name: &str) -> 
         let key = layer.keys.get(tag[0] as usize)?;
         (key == name).then(|| {
             let value = layer.values.get(tag[1] as usize)?;
-            value.bool_value.or_else(|| value.uint_value.map(|value| value != 0)).or_else(|| value.sint_value.map(|value| value != 0))
+            value
+                .bool_value
+                .or_else(|| value.uint_value.map(|value| value != 0))
+                .or_else(|| value.sint_value.map(|value| value != 0))
         })?
     })
 }

@@ -23,7 +23,8 @@ pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, Str
         &raster.anchors,
         validated.catalog.countries.len() as u16,
     );
-    let (details_length, island_count) = crate::details::generate_asset(repository_root, &validated, check)?;
+    let (details_length, island_count) =
+        crate::details::generate_asset(repository_root, &validated, check)?;
     let path = repository_root.join("assets/world-v1.bin");
     if check {
         let committed = fs::read(&path).map_err(|error| {
@@ -38,7 +39,11 @@ pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, Str
                 path.display()
             ));
         }
-        Ok(format!("{} and map details are current ({} bytes, {island_count} Canary Island polygons)", path.display(), bytes.len()))
+        Ok(format!(
+            "{} and map details are current ({} bytes, {island_count} Canary Island polygons)",
+            path.display(),
+            bytes.len()
+        ))
     } else {
         fs::create_dir_all(path.parent().expect("asset has a parent"))
             .map_err(|error| format!("could not create assets directory: {error}"))?;
@@ -120,7 +125,13 @@ fn render_zoom_zero_preview(
         }
     }
 
-    Ok(render_tile_dots(&dots, dot_width, preview_columns, preview_rows, color))
+    Ok(render_tile_dots(
+        &dots,
+        dot_width,
+        preview_columns,
+        preview_rows,
+        color,
+    ))
 }
 
 fn fill_tile_polygon(
@@ -477,8 +488,10 @@ fn political_border_mask(values: &[u16; 8]) -> u8 {
             if value == WATER {
                 continue;
             }
-            let different_right = dot_x == 0 && values[index + 1] != value && values[index + 1] != WATER;
-            let different_down = dot_y < 3 && values[index + 2] != value && values[index + 2] != WATER;
+            let different_right =
+                dot_x == 0 && values[index + 1] != value && values[index + 1] != WATER;
+            let different_down =
+                dot_y < 3 && values[index + 2] != value && values[index + 2] != WATER;
             if different_right || different_down {
                 mask |= BRAILLE_DOTS[dot_y][dot_x];
             }
@@ -514,9 +527,10 @@ fn feature_id(feature: &crate::source::Feature, catalog: &Catalog) -> u16 {
         .countries
         .iter()
         .position(|country| {
-            country.source_records.iter().any(|selector| {
-                selector.iso3 == *iso3 && selector.name == feature.properties.name
-            })
+            country
+                .source_records
+                .iter()
+                .any(|selector| selector.iso3 == *iso3 && selector.name == feature.properties.name)
         })
         .map(|index| index as u16)
         .unwrap_or(NEUTRAL_LAND)

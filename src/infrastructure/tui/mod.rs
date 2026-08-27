@@ -25,16 +25,28 @@ fn run_event_loop() -> io::Result<()> {
     loop {
         match event_action(event::read()?) {
             EventAction::Quit => return Ok(()),
-            EventAction::ZoomIn => { map.zoom_in(); draw(&mut terminal, &map)?; }
-            EventAction::ZoomOut => { map.zoom_out(); draw(&mut terminal, &map)?; }
-            EventAction::Pan(horizontal, vertical) => { map.pan(horizontal, vertical); draw(&mut terminal, &map)?; }
+            EventAction::ZoomIn => {
+                map.zoom_in();
+                draw(&mut terminal, &map)?;
+            }
+            EventAction::ZoomOut => {
+                map.zoom_out();
+                draw(&mut terminal, &map)?;
+            }
+            EventAction::Pan(horizontal, vertical) => {
+                map.pan(horizontal, vertical);
+                draw(&mut terminal, &map)?;
+            }
             EventAction::Redraw => draw(&mut terminal, &map)?,
             EventAction::Wait => {}
         }
     }
 }
 
-fn draw(terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>, map: &map::Map) -> io::Result<()> {
+fn draw(
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    map: &map::Map,
+) -> io::Result<()> {
     terminal.draw(|frame| {
         map.render(frame.area(), frame.buffer_mut());
     })?;
