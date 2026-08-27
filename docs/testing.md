@@ -105,7 +105,7 @@ Application use cases use deterministic fake implementations of the traits in
 
 ## Infrastructure And Generator Unit Tests
 
-- The catalog has exactly 195 playable countries.
+- The catalog has exactly 196 playable countries.
 - ISO3 values, canonical names, and normalized aliases are unique.
 - Every playable catalog entry maps to valid source geometry.
 - Polygon holes and `MultiPolygon` components survive parsing.

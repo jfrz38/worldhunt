@@ -31,7 +31,7 @@ play without additional data or configuration.
 ## Tasks
 
 - [ ] Document prerequisites, build, run, controls, color support, and `NO_COLOR`.
-- [ ] Document the 195-country policy and territorial distance behavior.
+- [ ] Document the 196-country policy and territorial distance behavior.
 - [ ] Review MIT code licensing and OGL data attribution.
 - [ ] Confirm the release binary embeds the expected asset version.
 - [ ] Build optimized binaries for Windows, Linux, and macOS.
@@ -45,7 +45,7 @@ play without additional data or configuration.
 
 - [ ] A new user can build and run the game from documented instructions.
 - [ ] Release artifacts run without source JSON or a network connection.
-- [ ] All 195 countries can be selected as targets and entered through their
+- [ ] All 196 countries can be selected as targets and entered through their
   canonical names.
 - [ ] Controls, color behavior, distances, and known limitations are documented.
 - [ ] Every distributed artifact has a checksum.

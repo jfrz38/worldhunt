@@ -48,6 +48,10 @@ The planned structure is:
 worldhunt/
 |-- Cargo.toml
 |-- assets/
+|   |-- country-map-v1/
+|   |   |-- {z}_{x}_{y}.pbf.gz
+|   |   `-- anchors-v1.bin
+|   |-- map-details-v1.bin
 |   `-- world-v1.bin
 |-- data/
 |   |-- countries.toml
@@ -165,7 +169,8 @@ state, but it never mutates the game or decides business rules.
 
 ### World Data
 
-`infrastructure/world_data` embeds and decodes the versioned asset once:
+`infrastructure/world_data` decodes the legacy raster asset. The active TUI map
+embeds its OSM basemap, versioned country-ID overlay tiles, and anchors directly:
 
 - `decoder` validates magic, version, lengths, identifier ranges, and section
   consistency before exposing data.
@@ -174,6 +179,11 @@ state, but it never mutates the game or decides business rules.
   matrices.
 - `map_data` exposes raster cells, anchors, and border flags to the TUI
   renderer without making them part of the domain model.
+
+The country overlay uses catalog indexes only; country names remain authoritative
+in `data/countries.toml`. It is Web-Mercator tiled to align with the zoomable
+Braille basemap and supplies renderer identity without exposing map geometry to
+the domain.
 
 The adapter maps raw encoded identifiers and records into domain values at its
 boundary. Domain code never parses source JSON, understands binary sections, or

@@ -32,7 +32,7 @@ unstructured runtime value.
 
 ## Catalog
 
-`data/countries.toml` defines the stable set of 195 playable countries and maps
+`data/countries.toml` defines the stable set of 196 playable countries and maps
 each one to a source geometry. It also defines canonical English names and
 aliases. Dataset records outside that catalog remain non-playable unless an
 explicit mapping says otherwise.
@@ -119,12 +119,12 @@ acceptable approximation target is within 10 km, to be confirmed against known
 and independently calculated cases.
 
 Distances are rounded to whole kilometers and stored in a symmetric
-`195 x 195` matrix of `u16` values. Adjacency is stored separately so the UI can
+`196 x 196` matrix of `u16` values. Adjacency is stored separately so the UI can
 show `Borders target` instead of `0 km` for an incorrect neighboring guess.
 
 ## Required Invariants
 
-- Exactly 195 playable countries exist.
+- Exactly 196 playable countries exist.
 - Every playable country resolves to valid geometry.
 - Canonical names, ISO3 values, and normalized aliases are unambiguous.
 - Every raster identifier is known or reserved.

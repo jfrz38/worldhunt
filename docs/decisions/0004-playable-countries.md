@@ -1,4 +1,4 @@
-# ADR 0004: Use 195 Playable Countries
+# ADR 0004: Use 196 Playable Countries
 
 Status: Accepted  
 Date: 2026-08-26
@@ -14,10 +14,10 @@ partially recognized states, dependencies, and territories.
 
 ## Decision
 
-The MVP uses a curated catalog of 195 playable countries: 193 United Nations
-member states plus Palestine and Vatican City. This catalog is the authority
-for targets, accepted guesses, stable identifiers, canonical English names,
-and explicit English aliases.
+The MVP uses a curated catalog of 196 playable countries: 193 United Nations
+member states plus Palestine, Vatican City, and Western Sahara. This catalog is
+the authority for targets, accepted guesses, stable identifiers, canonical
+English names, and explicit English aliases.
 
 Dataset records outside the catalog may be rendered as neutral land but are not
 valid targets or guesses. Separate dependency records are not automatically
@@ -36,7 +36,7 @@ merged into a sovereign country's gameplay geometry.
 
 ## Alternatives Considered
 
-### 197-country catalog
+### 198-country catalog
 
 Adding Kosovo and Taiwan is common in geography games, but introduces a policy
 change beyond the selected United Nations-based catalog.

@@ -30,7 +30,7 @@ when implementation starts, not when its plan is written.
 | [0001](decisions/0001-flat-map.md) | Use a flat equirectangular map | Accepted |
 | [0002](decisions/0002-embedded-world-data.md) | Embed preprocessed world data | Accepted |
 | [0003](decisions/0003-country-distance.md) | Measure minimum geodesic territory distance | Accepted |
-| [0004](decisions/0004-playable-countries.md) | Use a curated catalog of 195 playable countries | Accepted |
+| [0004](decisions/0004-playable-countries.md) | Use a curated catalog of 196 playable countries | Accepted |
 
 ## Iterations
 
