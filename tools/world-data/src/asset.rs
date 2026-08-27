@@ -23,6 +23,7 @@ pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, Str
         &raster.anchors,
         validated.catalog.countries.len() as u16,
     );
+    let (details_length, island_count) = crate::details::generate_asset(repository_root, &validated, check)?;
     let path = repository_root.join("assets/world-v1.bin");
     if check {
         let committed = fs::read(&path).map_err(|error| {
@@ -37,11 +38,7 @@ pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, Str
                 path.display()
             ));
         }
-        Ok(format!(
-            "{} is current ({} bytes)",
-            path.display(),
-            bytes.len()
-        ))
+        Ok(format!("{} and map details are current ({} bytes, {island_count} Canary Island polygons)", path.display(), bytes.len()))
     } else {
         fs::create_dir_all(path.parent().expect("asset has a parent"))
             .map_err(|error| format!("could not create assets directory: {error}"))?;
@@ -52,7 +49,7 @@ pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, Str
             )
         })?;
         Ok(format!(
-            "generated {} ({} bytes, {}x{} raster)",
+            "generated {} and map details ({} bytes + {details_length} bytes, {}x{} raster)",
             path.display(),
             bytes.len(),
             WIDTH,

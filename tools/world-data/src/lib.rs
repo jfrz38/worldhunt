@@ -2,6 +2,7 @@
 
 mod asset;
 mod catalog;
+mod details;
 mod mvt;
 mod normalization;
 mod raster;

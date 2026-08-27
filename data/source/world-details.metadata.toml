@@ -1,0 +1,9 @@
+# Derived only from the validated WorldHunt boundary snapshot.
+format = "WorldHunt geographic detail layer v1"
+source = "data/source/world-boundaries.json"
+generated_by = "cargo run -p world-data -- generate"
+sha256 = "742f5789d2e2fdfa622df3b73f51c230e2589ebca550bd34b514d71b866754e9"
+
+# Spain components within the Canary Islands bounds, plus the exact shared
+# segments between Morocco and Western Sahara. This layer complements MVT z0/z1
+# tiles that omit these features at their generalized resolutions.
