@@ -2,6 +2,7 @@
 
 mod asset;
 mod catalog;
+mod country_tiles;
 mod details;
 mod mvt;
 mod normalization;

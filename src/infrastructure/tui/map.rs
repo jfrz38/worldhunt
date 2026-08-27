@@ -6,6 +6,9 @@ use ratatui::{
 
 use super::mvt::{self, Tile};
 
+mod countries;
+use countries::CountryOverlay;
+
 const BRAILLE_DOTS: [[u8; 2]; 4] = [[0x01, 0x08], [0x02, 0x10], [0x04, 0x20], [0x40, 0x80]];
 const WATER: u8 = 1;
 const BORDER: u8 = 2;
@@ -15,6 +18,9 @@ const LAND_COLOR: Color = Color::Rgb(93, 105, 112);
 const WATER_COLOR: Color = Color::Rgb(8, 24, 42);
 const BORDER_COLOR: Color = Color::Rgb(37, 48, 56);
 const DETAIL_ZOOM: f64 = 0.5;
+const INITIAL_ZOOM: f64 = 1.0;
+const SPAIN_CENTER_X: f64 = 0.489_711_666_7;
+const SPAIN_CENTER_Y: f64 = 0.377_063_141_2;
 
 #[derive(Clone, Copy)]
 struct Viewport {
@@ -38,15 +44,16 @@ pub(super) struct Map {
     center_y: f64,
     zoom_zero: Tile,
     zoom_one: [Tile; 4],
+    countries: CountryOverlay,
     details: MapDetails,
 }
 
 impl Map {
     pub(super) fn load() -> Result<Self, String> {
         Ok(Self {
-            zoom: 0.0,
-            center_x: 0.5,
-            center_y: (NORTH + SOUTH) / 2.0,
+            zoom: INITIAL_ZOOM,
+            center_x: SPAIN_CENTER_X,
+            center_y: SPAIN_CENTER_Y,
             zoom_zero: mvt::decode(include_bytes!(
                 "../../../data/source/openstreetmap/0_0_0.pbf.gz"
             ))?,
@@ -64,6 +71,7 @@ impl Map {
                     "../../../data/source/openstreetmap/1_1_1.pbf.gz"
                 ))?,
             ],
+            countries: CountryOverlay::load()?,
             details: MapDetails::decode(include_bytes!("../../../assets/map-details-v1.bin"))?,
         })
     }
@@ -83,6 +91,16 @@ impl Map {
     }
 
     pub(super) fn render(&self, area: Rect, buffer: &mut Buffer) {
+        self.render_with_country_colors(area, buffer, &[]);
+    }
+
+    /// Country IDs are catalog indexes; an absent color preserves neutral land.
+    pub(super) fn render_with_country_colors(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        country_colors: &[Color],
+    ) {
         if area.width < 2 || area.height < 2 {
             return;
         }
@@ -91,6 +109,7 @@ impl Map {
         let dot_width = columns * 2;
         let dot_height = rows * 4;
         let mut dots = vec![0_u8; dot_width * dot_height];
+        let mut countries = vec![u16::MAX; dot_width * dot_height];
         let scale =
             (dot_width as f64).min(dot_height as f64 / (SOUTH - NORTH)) * 2.0_f64.powf(self.zoom);
         let viewport = Viewport {
@@ -100,6 +119,8 @@ impl Map {
             center_y: self.center_y,
             scale,
         };
+
+        self.countries.draw(&mut countries, viewport, self.zoom);
 
         for (tile, tile_x, tile_y, zoom) in self.active_tiles() {
             draw_tile(
@@ -123,7 +144,15 @@ impl Map {
                 scale,
             );
         }
-        render_dots(&dots, dot_width, area, rows, buffer);
+        render_dots(
+            &dots,
+            &countries,
+            country_colors,
+            dot_width,
+            area,
+            rows,
+            buffer,
+        );
         render_status(area, buffer, self.zoom);
     }
 
@@ -387,6 +416,38 @@ fn fill_polygon(
     }
 }
 
+fn fill_country_polygon(
+    countries: &mut [u16],
+    extent: u32,
+    rings: &[Vec<(i32, i32)>],
+    country_id: u16,
+    position: TilePosition,
+    viewport: Viewport,
+) {
+    let rings: Vec<_> = rings
+        .iter()
+        .map(|ring| project_path(ring, extent, position, viewport))
+        .filter(|ring| ring.len() >= 3)
+        .collect();
+    for y in 0..viewport.height {
+        let mut intersections = rings
+            .iter()
+            .flat_map(|ring| ring_intersections(ring, y as f64 + 0.5))
+            .collect::<Vec<_>>();
+        intersections.sort_by(f64::total_cmp);
+        for pair in intersections.chunks_exact(2) {
+            let start = pair[0].ceil().max(0.0) as usize;
+            let end = pair[1].ceil().min(viewport.width as f64) as usize;
+            for x in start..end {
+                let pixel = &mut countries[y * viewport.width + x];
+                if *pixel == u16::MAX || country_id != u16::MAX {
+                    *pixel = (*pixel).min(country_id);
+                }
+            }
+        }
+    }
+}
+
 fn project_path(
     path: &[(i32, i32)],
     extent: u32,
@@ -454,7 +515,15 @@ fn draw_line(
     }
 }
 
-fn render_dots(dots: &[u8], dot_width: usize, area: Rect, rows: usize, buffer: &mut Buffer) {
+fn render_dots(
+    dots: &[u8],
+    countries: &[u16],
+    country_colors: &[Color],
+    dot_width: usize,
+    area: Rect,
+    rows: usize,
+    buffer: &mut Buffer,
+) {
     for row in 0..rows {
         for column in 0..usize::from(area.width) {
             let mut mask = 0;
@@ -475,11 +544,38 @@ fn render_dots(dots: &[u8], dot_width: usize, area: Rect, rows: usize, buffer: &
             } else {
                 WATER_COLOR
             };
+            let land = country_colors
+                .get(usize::from(dominant_country(
+                    countries, dot_width, row, column,
+                )))
+                .copied()
+                .unwrap_or(LAND_COLOR);
             buffer[(area.x + column as u16, area.y + row as u16)]
                 .set_symbol(&braille(mask))
-                .set_style(Style::default().fg(foreground).bg(LAND_COLOR));
+                .set_style(Style::default().fg(foreground).bg(land));
         }
     }
+}
+
+fn dominant_country(countries: &[u16], dot_width: usize, row: usize, column: usize) -> u16 {
+    let mut selected = u16::MAX;
+    let mut selected_count = 0;
+    for dot_y in 0..4 {
+        for dot_x in 0..2 {
+            let candidate = countries[(row * 4 + dot_y) * dot_width + column * 2 + dot_x];
+            let count = (0..4)
+                .flat_map(|other_y| (0..2).map(move |other_x| (other_y, other_x)))
+                .filter(|&(other_y, other_x)| {
+                    countries[(row * 4 + other_y) * dot_width + column * 2 + other_x] == candidate
+                })
+                .count();
+            if count > selected_count || (count == selected_count && candidate < selected) {
+                selected = candidate;
+                selected_count = count;
+            }
+        }
+    }
+    selected
 }
 
 fn render_status(area: Rect, buffer: &mut Buffer, zoom: f64) {
@@ -495,4 +591,32 @@ fn braille(mask: u8) -> String {
     char::from_u32(0x2800 + u32::from(mask))
         .expect("valid Braille mask")
         .to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{INITIAL_ZOOM, Map, SPAIN_CENTER_X, SPAIN_CENTER_Y, dominant_country};
+
+    #[test]
+    fn loads_centered_on_spain_at_zoom_one() {
+        let map = Map::load().expect("map assets should load");
+
+        assert_eq!(map.zoom, INITIAL_ZOOM);
+        assert_eq!(map.center_x, SPAIN_CENTER_X);
+        assert_eq!(map.center_y, SPAIN_CENTER_Y);
+    }
+
+    #[test]
+    fn chooses_the_most_represented_country_in_a_braille_cell() {
+        let countries = [1, 1, 1, 2, 1, 2, 3, 3];
+
+        assert_eq!(dominant_country(&countries, 2, 0, 0), 1);
+    }
+
+    #[test]
+    fn breaks_country_ties_by_stable_catalog_index() {
+        let countries = [4, 4, 4, 4, 2, 2, 2, 2];
+
+        assert_eq!(dominant_country(&countries, 2, 0, 0), 2);
+    }
 }

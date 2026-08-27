@@ -30,10 +30,10 @@ test: ## run all workspace tests
 data-validate: ## validate the committed country catalog and source snapshot
 	$(CARGO) run -p world-data -- validate
 
-data-generate: ## regenerate the embedded world-map asset
+data-generate: ## regenerate embedded world-map assets and country overlay
 	$(CARGO) run --release -p world-data -- generate
 
-data-check: ## verify the committed world-map asset is current
+data-check: ## verify committed world-map assets and country overlay are current
 	$(CARGO) run --release -p world-data -- generate --check
 
 check: fmt-check lint test data-validate data-check ## run all local quality checks

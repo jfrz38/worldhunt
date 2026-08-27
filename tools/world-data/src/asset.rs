@@ -23,6 +23,8 @@ pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, Str
         &raster.anchors,
         validated.catalog.countries.len() as u16,
     );
+    let country_tiles_length =
+        crate::country_tiles::generate_assets(repository_root, &validated, &raster, check)?;
     let (details_length, island_count) =
         crate::details::generate_asset(repository_root, &validated, check)?;
     let path = repository_root.join("assets/world-v1.bin");
@@ -40,7 +42,7 @@ pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, Str
             ));
         }
         Ok(format!(
-            "{} and map details are current ({} bytes, {island_count} Canary Island polygons)",
+            "{} and country tiles/map details are current ({} + {country_tiles_length} bytes, {island_count} Canary Island polygons)",
             path.display(),
             bytes.len()
         ))
@@ -54,7 +56,7 @@ pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, Str
             )
         })?;
         Ok(format!(
-            "generated {} and map details ({} bytes + {details_length} bytes, {}x{} raster)",
+            "generated {} and country tiles/map details ({} + {country_tiles_length} + {details_length} bytes, {}x{} raster)",
             path.display(),
             bytes.len(),
             WIDTH,
