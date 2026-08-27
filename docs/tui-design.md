@@ -91,11 +91,11 @@ break gameplay.
 
 ## Responsive Rendering
 
-The internal map raster is sampled into the largest available `2:1` pixel
-rectangle. Because each half-block cell carries two vertical pixels, terminal
-row calculations account for the doubled vertical sample count. Resizing
-recomputes layout and sampling without rebuilding world data or resetting the
-game.
+The internal map raster is sampled into the largest available rectangle while
+preserving its `2.4:1` pixel ratio. Because each half-block cell carries two
+vertical pixels, terminal row calculations account for the doubled vertical
+sample count. Resizing recomputes layout and sampling without rebuilding world
+data or resetting the game.
 
 The attempt list shows as much history as fits. When it overflows, the most
 recent attempts remain visible and the total attempt count remains available.

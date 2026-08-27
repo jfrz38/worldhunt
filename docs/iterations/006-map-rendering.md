@@ -36,7 +36,7 @@ usable across modern terminal color capabilities.
 - [ ] Implement layout, map, and theme modules under `infrastructure/tui`.
 - [ ] Define renderer inputs that expose neither mutable domain state nor
   application internals.
-- [ ] Fit the `2:1` map into an arbitrary Ratatui rectangle.
+- [ ] Fit the `2.4:1` map into an arbitrary Ratatui rectangle.
 - [ ] Sample two vertical map pixels into each `▀` cell.
 - [ ] Preserve country identity while downsampling the source raster.
 - [ ] Render water, unguessed land, neutral land, and borders distinctly.
