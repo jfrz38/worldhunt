@@ -16,6 +16,22 @@ const WATER_COLOR: Color = Color::Rgb(8, 24, 42);
 const BORDER_COLOR: Color = Color::Rgb(37, 48, 56);
 const DETAIL_ZOOM: f64 = 0.5;
 
+#[derive(Clone, Copy)]
+struct Viewport {
+    width: usize,
+    height: usize,
+    center_x: f64,
+    center_y: f64,
+    scale: f64,
+}
+
+#[derive(Clone, Copy)]
+struct TilePosition {
+    x: u32,
+    y: u32,
+    zoom: u32,
+}
+
 pub(super) struct Map {
     zoom: f64,
     center_x: f64,
@@ -77,19 +93,24 @@ impl Map {
         let mut dots = vec![0_u8; dot_width * dot_height];
         let scale =
             (dot_width as f64).min(dot_height as f64 / (SOUTH - NORTH)) * 2.0_f64.powf(self.zoom);
+        let viewport = Viewport {
+            width: dot_width,
+            height: dot_height,
+            center_x: self.center_x,
+            center_y: self.center_y,
+            scale,
+        };
 
         for (tile, tile_x, tile_y, zoom) in self.active_tiles() {
             draw_tile(
                 &mut dots,
-                dot_width,
-                dot_height,
                 tile,
-                tile_x,
-                tile_y,
-                zoom,
-                self.center_x,
-                self.center_y,
-                scale,
+                TilePosition {
+                    x: tile_x,
+                    y: tile_y,
+                    zoom,
+                },
+                viewport,
             );
         }
         if self.zoom >= DETAIL_ZOOM {
@@ -300,27 +321,13 @@ fn read_points(bytes: &[u8], offset: &mut usize) -> Result<Vec<(f64, f64)>, Stri
     Ok(points)
 }
 
-fn draw_tile(
-    dots: &mut [u8],
-    width: usize,
-    height: usize,
-    tile: &Tile,
-    tile_x: u32,
-    tile_y: u32,
-    zoom: u32,
-    center_x: f64,
-    center_y: f64,
-    scale: f64,
-) {
+fn draw_tile(dots: &mut [u8], tile: &Tile, position: TilePosition, viewport: Viewport) {
     for layer in &tile.layers {
         let extent = layer.extent.unwrap_or(4096);
         if layer.name == "water" {
             for feature in &layer.features {
                 let rings = mvt::decode_geometry(&feature.geometry);
-                fill_polygon(
-                    dots, width, height, extent, &rings, tile_x, tile_y, zoom, center_x, center_y,
-                    scale,
-                );
+                fill_polygon(dots, extent, &rings, position, viewport);
             }
         }
     }
@@ -336,11 +343,16 @@ fn draw_tile(
                 continue;
             }
             for path in mvt::decode_geometry(&feature.geometry) {
-                let path = project_path(
-                    &path, extent, tile_x, tile_y, zoom, width, height, center_x, center_y, scale,
-                );
+                let path = project_path(&path, extent, position, viewport);
                 for edge in path.windows(2) {
-                    draw_line(dots, width, height, edge[0], edge[1], BORDER);
+                    draw_line(
+                        dots,
+                        viewport.width,
+                        viewport.height,
+                        edge[0],
+                        edge[1],
+                        BORDER,
+                    );
                 }
             }
         }
@@ -349,27 +361,17 @@ fn draw_tile(
 
 fn fill_polygon(
     dots: &mut [u8],
-    width: usize,
-    height: usize,
     extent: u32,
     rings: &[Vec<(i32, i32)>],
-    tile_x: u32,
-    tile_y: u32,
-    zoom: u32,
-    center_x: f64,
-    center_y: f64,
-    scale: f64,
+    position: TilePosition,
+    viewport: Viewport,
 ) {
     let rings: Vec<_> = rings
         .iter()
-        .map(|ring| {
-            project_path(
-                ring, extent, tile_x, tile_y, zoom, width, height, center_x, center_y, scale,
-            )
-        })
+        .map(|ring| project_path(ring, extent, position, viewport))
         .filter(|ring| ring.len() >= 3)
         .collect();
-    for y in 0..height {
+    for y in 0..viewport.height {
         let mut intersections = rings
             .iter()
             .flat_map(|ring| ring_intersections(ring, y as f64 + 0.5))
@@ -377,9 +379,9 @@ fn fill_polygon(
         intersections.sort_by(f64::total_cmp);
         for pair in intersections.chunks_exact(2) {
             let start = pair[0].ceil().max(0.0) as usize;
-            let end = pair[1].ceil().min(width as f64) as usize;
+            let end = pair[1].ceil().min(viewport.width as f64) as usize;
             for x in start..end {
-                dots[y * width + x] = WATER;
+                dots[y * viewport.width + x] = WATER;
             }
         }
     }
@@ -388,24 +390,20 @@ fn fill_polygon(
 fn project_path(
     path: &[(i32, i32)],
     extent: u32,
-    tile_x: u32,
-    tile_y: u32,
-    zoom: u32,
-    width: usize,
-    height: usize,
-    center_x: f64,
-    center_y: f64,
-    scale: f64,
+    position: TilePosition,
+    viewport: Viewport,
 ) -> Vec<(i32, i32)> {
-    let tiles = 2.0_f64.powi(zoom as i32);
+    let tiles = 2.0_f64.powi(position.zoom as i32);
     let extent = f64::from(extent);
     path.iter()
         .map(|&(x, y)| {
-            let world_x = (f64::from(tile_x) + f64::from(x) / extent) / tiles;
-            let world_y = (f64::from(tile_y) + f64::from(y) / extent) / tiles;
+            let world_x = (f64::from(position.x) + f64::from(x) / extent) / tiles;
+            let world_y = (f64::from(position.y) + f64::from(y) / extent) / tiles;
             (
-                (width as f64 / 2.0 + (world_x - center_x) * scale).round() as i32,
-                (height as f64 / 2.0 + (world_y - center_y) * scale).round() as i32,
+                (viewport.width as f64 / 2.0 + (world_x - viewport.center_x) * viewport.scale)
+                    .round() as i32,
+                (viewport.height as f64 / 2.0 + (world_y - viewport.center_y) * viewport.scale)
+                    .round() as i32,
             )
         })
         .collect()
