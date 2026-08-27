@@ -1,8 +1,8 @@
 # Iteration 002: Country Catalog
 
-Status: In Progress
+Status: Completed
 Started: 2026-08-27
-Completed:
+Completed: 2026-08-27
 
 ## Goal
 
@@ -90,4 +90,5 @@ None yet.
 
 ## Outcome
 
-Pending merge into `develop` and post-merge verification.
+Merged through PR [#2](https://github.com/jfrz38/worldhunt/pull/2) and verified
+on `develop` before iteration 003 started.

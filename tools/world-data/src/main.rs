@@ -4,8 +4,10 @@ fn main() -> ExitCode {
     let mut arguments = env::args_os();
     let _program = arguments.next();
 
-    if arguments.next().as_deref() != Some("validate".as_ref()) || arguments.next().is_some() {
-        eprintln!("usage: world-data validate");
+    let command = arguments.next();
+    let check = arguments.next().as_deref() == Some("--check".as_ref());
+    if arguments.next().is_some() {
+        eprintln!("usage: world-data <validate|generate|preview> [--check]");
         return ExitCode::from(2);
     }
 
@@ -15,12 +17,17 @@ fn main() -> ExitCode {
         .expect("world-data must remain at tools/world-data")
         .to_path_buf();
 
-    match world_data::validate_repository(&repository_root) {
-        Ok(report) => {
-            println!(
-                "validated {} playable countries, {} source mappings, and {} non-playable source records",
-                report.country_count, report.source_mapping_count, report.non_playable_record_count
-            );
+    let result = match command.as_deref() {
+        Some(command) if command == "validate" && !check => world_data::validate_repository(&repository_root)
+            .map(|report| format!("validated {} playable countries, {} source mappings, and {} non-playable source records", report.country_count, report.source_mapping_count, report.non_playable_record_count)),
+        Some(command) if command == "generate" => world_data::generate_asset(&repository_root, check),
+        Some(command) if command == "preview" && !check => world_data::preview_asset(&repository_root),
+        _ => Err("usage: world-data <validate|generate|preview> [--check]".to_owned()),
+    };
+
+    match result {
+        Ok(message) => {
+            println!("{message}");
             ExitCode::SUCCESS
         }
         Err(error) => {

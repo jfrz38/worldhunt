@@ -1,0 +1,9 @@
+# Experimental zoom-0 OpenStreetMap basemap used only by `world-data preview`.
+source_repository = "https://www.openstreetmap.org/"
+retrieved_on = "2026-08-27"
+format = "Mapbox Vector Tile 2.1, gzip compressed"
+sha256 = "94e84c14fea9cd4f66a9d7ba82633dc8f1679a83e7b001b9434619c49794c15f"
+
+# Map data attribution required by OpenStreetMap.
+attribution = "OpenStreetMap contributors"
+data_license = "Open Database License (ODbL)"

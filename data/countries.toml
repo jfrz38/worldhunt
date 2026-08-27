@@ -1758,3 +1758,12 @@ aliases = ["Holy See"]
 [[countries.source_records]]
 iso3 = "VAT"
 name = "Holy See"
+
+[[countries]]
+iso3 = "ESH"
+name = "Western Sahara"
+aliases = ["Sahara Occidental"]
+
+[[countries.source_records]]
+iso3 = "ESH"
+name = "Western Sahara"

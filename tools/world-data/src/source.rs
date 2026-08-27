@@ -39,14 +39,27 @@ impl GeometryKind {
             Self::Unsupported => false,
         }
     }
+
+    pub(crate) fn polygons(&self) -> Vec<&[Vec<Vec<f64>>]> {
+        match self {
+            Self::Polygon(rings) => vec![rings],
+            Self::MultiPolygon(polygons) => polygons.iter().map(Vec::as_slice).collect(),
+            Self::Unsupported => Vec::new(),
+        }
+    }
 }
 
 fn valid_polygon(rings: &[Vec<Vec<f64>>]) -> bool {
     !rings.is_empty()
         && rings.iter().all(|ring| {
             ring.len() >= 4
+                && ring.first() == ring.last()
                 && ring.iter().all(|position| {
-                    position.len() >= 2 && position.iter().all(|coordinate| coordinate.is_finite())
+                    position.len() >= 2
+                        && position[0].is_finite()
+                        && position[1].is_finite()
+                        && (-180.0..=180.0).contains(&position[0])
+                        && (-90.0..=90.0).contains(&position[1])
                 })
         })
 }

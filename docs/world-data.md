@@ -77,14 +77,15 @@ would discard political identity and shared borders.
 
 ## Map Projection and Raster
 
-The MVP uses a Plate Carree/equirectangular world raster with longitude mapped
-linearly from -180 to 180 and latitude from 90 to -90. The initial internal
-resolution target is `720 x 360`, subject to measurement during iteration 003.
+The MVP uses a Plate Carree/equirectangular map cropped below `60 degrees S`;
+longitude maps linearly from -180 to 180 and latitude from 90 to -60. The
+internal raster is `720 x 300`.
 
-Each raster sample stores a country or reserved land/water identifier. A border
-mask records transitions between different territories. Rasterization uses
-coverage or supersampling rather than testing only the center point, because a
-center-only low-resolution raster removes many small countries and islands.
+Each raster sample stores a country or reserved land/water identifier. A
+one-cell border mask records coastlines and transitions between territories.
+Rasterization uses coverage or supersampling rather than testing only the center
+point, because a center-only low-resolution raster removes many small countries
+and islands.
 
 The raster is a rendering representation, not the source used for geographic
 distance. Reducing terminal resolution may still hide small countries, so each

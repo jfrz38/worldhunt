@@ -6,8 +6,8 @@ design, architectural decisions, and implementation progress.
 ## Current Status
 
 - Project phase: implementation
-- Active iteration: [002 - Country catalog](iterations/002-country-catalog.md)
-- Next iteration: [003 - Map data generator](iterations/003-map-data-generator.md)
+- Active iteration: [003 - Map data generator](iterations/003-map-data-generator.md)
+- Next iteration: [004 - Distance calculation](iterations/004-distance-calculation.md)
 - MVP target: a fully local, cross-platform terminal geography game
 
 Only one iteration may be `In Progress` at a time. An iteration becomes active
@@ -37,8 +37,8 @@ when implementation starts, not when its plan is written.
 | Iteration | Goal | Status |
 | --- | --- | --- |
 | [001](iterations/001-project-foundation.md) | Establish the Rust project and safe terminal lifecycle | Completed |
-| [002](iterations/002-country-catalog.md) | Define countries, aliases, provenance, and licenses | In Progress |
-| [003](iterations/003-map-data-generator.md) | Generate an identity-preserving world raster | Planned |
+| [002](iterations/002-country-catalog.md) | Define countries, aliases, provenance, and licenses | Completed |
+| [003](iterations/003-map-data-generator.md) | Generate an identity-preserving world raster | In Progress |
 | [004](iterations/004-distance-calculation.md) | Precompute territorial distances and adjacency | Planned |
 | [005](iterations/005-game-domain.md) | Implement the game independently of the TUI | Planned |
 | [006](iterations/006-map-rendering.md) | Render a responsive colored terminal map | Planned |

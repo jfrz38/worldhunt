@@ -12,13 +12,14 @@ globe and a flat world map.
 
 ## Decision
 
-The MVP will use a flat Plate Carree/equirectangular world map. It will be
-rendered from a preprocessed raster and fitted responsively into the terminal.
+The MVP will use a flat Plate Carree/equirectangular map from `90 degrees N` to
+`60 degrees S`. Antarctica is outside the playable scope and is cropped from
+the preprocessed raster. The map will be fitted responsively into the terminal;
 Unicode half-blocks will improve vertical resolution.
 
 ## Consequences
 
-- The entire world and all previous guesses remain visible simultaneously.
+- All playable countries and previous guesses remain visible simultaneously.
 - Projection and raster sampling are simple and deterministic.
 - The map adapts to small and resized terminals.
 - Area and shape distortion increases toward the poles.
