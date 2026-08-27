@@ -10,7 +10,7 @@ fn validates_the_committed_catalog_and_source_snapshot() {
 
     let report = validate_repository(repository_root).expect("committed data should validate");
 
-    assert_eq!(report.country_count, 195);
-    assert_eq!(report.source_mapping_count, 196);
-    assert_eq!(report.non_playable_record_count, 60);
+    assert_eq!(report.country_count, 196);
+    assert_eq!(report.source_mapping_count, 197);
+    assert_eq!(report.non_playable_record_count, 59);
 }
