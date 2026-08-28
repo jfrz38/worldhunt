@@ -1,5 +1,4 @@
-//! Build-time territorial proximity data. This stays outside the runtime asset
-//! until the asset format grows a proximity section.
+//! Build-time territorial proximity data encoded into the version-2 world asset.
 
 use crate::{source::SourceRecordKey, validation::ValidatedWorldData};
 use geo::{Coord, Intersects, LineString, MapCoords, Polygon};
@@ -81,6 +80,18 @@ pub(crate) fn generate(data: &ValidatedWorldData) -> Result<ProximityMatrices, S
 }
 
 impl ProximityMatrices {
+    pub(crate) fn country_count(&self) -> usize {
+        self.country_count
+    }
+
+    pub(crate) fn distances_km(&self) -> &[u16] {
+        &self.distances_km
+    }
+
+    pub(crate) fn adjacency(&self) -> &[bool] {
+        &self.adjacency
+    }
+
     pub(crate) fn distance_km(&self, first: usize, second: usize) -> Option<u16> {
         matrix_index(self.country_count, first, second)
             .ok()

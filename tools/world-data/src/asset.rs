@@ -12,8 +12,8 @@ use std::{
 use terminal_size::{Height, Width, terminal_size};
 
 const MAGIC: [u8; 4] = *b"WHMP";
-const VERSION: u16 = 1;
-const HEADER_LENGTH: usize = 32;
+const VERSION: u16 = 2;
+const HEADER_LENGTH: usize = 36;
 
 pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, String> {
     let validated = validation::load_validated_repository(repository_root)?;
@@ -27,17 +27,22 @@ pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, Str
         started.elapsed().as_millis()
     );
     let raster = raster::rasterize(&validated)?;
+    if proximity.country_count() != validated.catalog.countries.len() {
+        return Err("proximity matrix country count does not match the catalog".to_owned());
+    }
     let bytes = encode(
         &raster.cells,
         &raster.borders,
         &raster.anchors,
         validated.catalog.countries.len() as u16,
-    );
+        proximity.distances_km(),
+        proximity.adjacency(),
+    )?;
     let country_tiles_length =
         crate::country_tiles::generate_assets(repository_root, &validated, &raster, check)?;
     let (details_length, island_count) =
         crate::details::generate_asset(repository_root, &validated, check)?;
-    let path = repository_root.join("assets/world-v1.bin");
+    let path = repository_root.join("assets/world-v2.bin");
     if check {
         let committed = fs::read(&path).map_err(|error| {
             format!(
@@ -742,8 +747,11 @@ fn preview_glyph(top: u16, bottom: u16) -> char {
 pub(crate) struct DecodedAsset {
     pub(crate) width: u16,
     pub(crate) height: u16,
+    pub(crate) country_count: u16,
     pub(crate) cells: Vec<u16>,
     pub(crate) borders: Vec<u8>,
+    pub(crate) distances_km: Vec<u16>,
+    pub(crate) adjacency: Vec<bool>,
 }
 
 pub(crate) fn decode(bytes: &[u8], repository_root: &Path) -> Result<DecodedAsset, String> {
@@ -766,13 +774,20 @@ pub(crate) fn decode(bytes: &[u8], repository_root: &Path) -> Result<DecodedAsse
     let cell_length = read_u32(bytes, 16)? as usize;
     let border_length = read_u32(bytes, 20)? as usize;
     let anchor_length = read_u32(bytes, 24)? as usize;
+    let distance_length = read_u32(bytes, 28)? as usize;
+    let adjacency_length = read_u32(bytes, 32)? as usize;
     let expected_cells = usize::from(width)
         .checked_mul(usize::from(height))
         .and_then(|count| count.checked_mul(2))
         .ok_or("asset dimensions overflow")?;
+    let matrix_entries = usize::from(country_count)
+        .checked_mul(usize::from(country_count))
+        .ok_or("asset country count overflows")?;
     if cell_length != expected_cells
         || border_length != expected_cells / 2
         || anchor_length != usize::from(country_count) * 4
+        || distance_length != matrix_entries * 2
+        || adjacency_length != matrix_entries
     {
         return Err("asset section lengths are inconsistent".to_owned());
     }
@@ -780,6 +795,8 @@ pub(crate) fn decode(bytes: &[u8], repository_root: &Path) -> Result<DecodedAsse
         .checked_add(cell_length)
         .and_then(|n| n.checked_add(border_length))
         .and_then(|n| n.checked_add(anchor_length))
+        .and_then(|n| n.checked_add(distance_length))
+        .and_then(|n| n.checked_add(adjacency_length))
         .ok_or("asset length overflow")?;
     if bytes.len() != total {
         return Err("asset length does not match its header".to_owned());
@@ -809,6 +826,20 @@ pub(crate) fn decode(bytes: &[u8], repository_root: &Path) -> Result<DecodedAsse
             Ok((x, y))
         })
         .collect::<Result<Vec<_>, String>>()?;
+    let distance_start = anchor_start + anchor_length;
+    let distances_km = (0..matrix_entries)
+        .map(|index| read_u16(bytes, distance_start + index * 2))
+        .collect::<Result<Vec<_>, _>>()?;
+    let adjacency_start = distance_start + distance_length;
+    let adjacency = bytes[adjacency_start..adjacency_start + adjacency_length]
+        .iter()
+        .map(|value| match value {
+            0 => Ok(false),
+            1 => Ok(true),
+            _ => Err("asset contains an invalid adjacency value".to_owned()),
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    validate_proximity(&distances_km, &adjacency, usize::from(country_count))?;
     if country_count
         != validation::load_validated_repository(repository_root)?
             .catalog
@@ -820,13 +851,32 @@ pub(crate) fn decode(bytes: &[u8], repository_root: &Path) -> Result<DecodedAsse
     Ok(DecodedAsset {
         width,
         height,
+        country_count,
         cells,
         borders,
+        distances_km,
+        adjacency,
     })
 }
 
-fn encode(cells: &[u16], borders: &[u8], anchors: &[(u16, u16)], country_count: u16) -> Vec<u8> {
-    let mut bytes = Vec::with_capacity(HEADER_LENGTH + cells.len() * 3 + anchors.len() * 4);
+fn encode(
+    cells: &[u16],
+    borders: &[u8],
+    anchors: &[(u16, u16)],
+    country_count: u16,
+    distances_km: &[u16],
+    adjacency: &[bool],
+) -> Result<Vec<u8>, String> {
+    let matrix_entries = usize::from(country_count)
+        .checked_mul(usize::from(country_count))
+        .ok_or("asset country count overflows")?;
+    if distances_km.len() != matrix_entries || adjacency.len() != matrix_entries {
+        return Err("proximity matrix dimensions do not match the country count".to_owned());
+    }
+    validate_proximity(distances_km, adjacency, usize::from(country_count))?;
+    let mut bytes = Vec::with_capacity(
+        HEADER_LENGTH + cells.len() * 3 + anchors.len() * 4 + distances_km.len() * 3,
+    );
     bytes.extend(MAGIC);
     put_u16(&mut bytes, VERSION);
     put_u16(&mut bytes, WIDTH);
@@ -837,7 +887,8 @@ fn encode(cells: &[u16], borders: &[u8], anchors: &[(u16, u16)], country_count: 
     put_u32(&mut bytes, (cells.len() * 2) as u32);
     put_u32(&mut bytes, borders.len() as u32);
     put_u32(&mut bytes, (anchors.len() * 4) as u32);
-    bytes.extend([0; 4]);
+    put_u32(&mut bytes, (distances_km.len() * 2) as u32);
+    put_u32(&mut bytes, adjacency.len() as u32);
     for cell in cells {
         put_u16(&mut bytes, *cell);
     }
@@ -846,7 +897,43 @@ fn encode(cells: &[u16], borders: &[u8], anchors: &[(u16, u16)], country_count: 
         put_u16(&mut bytes, *x);
         put_u16(&mut bytes, *y);
     }
-    bytes
+    for distance_km in distances_km {
+        put_u16(&mut bytes, *distance_km);
+    }
+    bytes.extend(adjacency.iter().map(|value| u8::from(*value)));
+    Ok(bytes)
+}
+
+fn validate_proximity(
+    distances_km: &[u16],
+    adjacency: &[bool],
+    country_count: usize,
+) -> Result<(), String> {
+    let expected_length = country_count
+        .checked_mul(country_count)
+        .ok_or("asset country count overflows")?;
+    if distances_km.len() != expected_length || adjacency.len() != expected_length {
+        return Err("asset proximity matrix dimensions are invalid".to_owned());
+    }
+    for first in 0..country_count {
+        let diagonal = first * country_count + first;
+        if distances_km[diagonal] != 0 || adjacency[diagonal] {
+            return Err("asset proximity matrix diagonal is invalid".to_owned());
+        }
+        for second in first + 1..country_count {
+            let forward = first * country_count + second;
+            let reverse = second * country_count + first;
+            if distances_km[forward] != distances_km[reverse]
+                || adjacency[forward] != adjacency[reverse]
+            {
+                return Err("asset proximity matrices are not symmetric".to_owned());
+            }
+            if adjacency[forward] && distances_km[forward] != 0 {
+                return Err("asset adjacent countries must have zero separation".to_owned());
+            }
+        }
+    }
+    Ok(())
 }
 fn put_u16(bytes: &mut Vec<u8>, value: u16) {
     bytes.extend(value.to_le_bytes());
@@ -876,21 +963,32 @@ mod tests {
     };
     use crate::raster::{HEIGHT, NEUTRAL_LAND, WATER, WIDTH};
     use std::path::Path;
+
+    fn empty_proximity(country_count: usize) -> (Vec<u16>, Vec<bool>) {
+        (
+            vec![0; country_count * country_count],
+            vec![false; country_count * country_count],
+        )
+    }
     #[test]
     fn rejects_an_invalid_magic() {
         assert!(decode(b"bad", Path::new(".")).is_err());
     }
     #[test]
     fn encodes_the_expected_header_size() {
+        let (distances, adjacency) = empty_proximity(1);
         assert_eq!(
             encode(
                 &vec![0; usize::from(WIDTH) * usize::from(HEIGHT)],
                 &vec![0; usize::from(WIDTH) * usize::from(HEIGHT)],
                 &[(0, 0)],
-                1
+                1,
+                &distances,
+                &adjacency,
             )
+            .expect("valid proximity data")
             .len(),
-            32 + usize::from(WIDTH) * usize::from(HEIGHT) * 3 + 4
+            36 + usize::from(WIDTH) * usize::from(HEIGHT) * 3 + 4 + 3
         );
     }
     #[test]
@@ -898,8 +996,11 @@ mod tests {
         let decoded = DecodedAsset {
             width: 4,
             height: 2,
+            country_count: 1,
             cells: vec![WATER, NEUTRAL_LAND, 0, 0, WATER, NEUTRAL_LAND, 0, 0],
             borders: vec![0, 0, 1, 0, 0, 0, 0, 0],
+            distances_km: vec![0],
+            adjacency: vec![false],
         };
         let color = render_preview(&decoded, 8, 3, true);
         assert!(
@@ -919,8 +1020,11 @@ mod tests {
         let decoded = DecodedAsset {
             width: 2,
             height: 4,
+            country_count: 1,
             cells: vec![0; 8],
             borders: vec![1, 0, 0, 0, 0, 0, 0, 1],
+            distances_km: vec![0],
+            adjacency: vec![false],
         };
 
         let mask = preview_braille_mask(&decoded, 0, 0, 1, 1);
@@ -933,8 +1037,11 @@ mod tests {
         let decoded = DecodedAsset {
             width: 1,
             height: 2,
+            country_count: 1,
             cells: vec![WATER, 0],
             borders: vec![0, 0],
+            distances_km: vec![0],
+            adjacency: vec![false],
         };
 
         assert_eq!(render_preview(&decoded, 2, 2, false), "▄\n");
@@ -947,10 +1054,45 @@ mod tests {
             .nth(2)
             .expect("world-data should remain below the repository root");
         let decoded = decode(
-            include_bytes!("../../../assets/world-v1.bin"),
+            include_bytes!("../../../assets/world-v2.bin"),
             repository_root,
         )
         .expect("committed asset should decode");
         assert_eq!((decoded.width, decoded.height), (WIDTH, HEIGHT));
+        assert_eq!(decoded.country_count, 196);
+        assert_eq!(decoded.distances_km.len(), 196 * 196);
+        assert_eq!(decoded.adjacency.len(), 196 * 196);
+    }
+
+    #[test]
+    fn committed_asset_preserves_real_country_proximity() {
+        let repository_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .nth(2)
+            .expect("world-data should remain below the repository root");
+        let catalog = crate::validation::load_validated_repository(repository_root)
+            .expect("committed repository data should validate")
+            .catalog;
+        let index = |iso3| {
+            catalog
+                .countries
+                .iter()
+                .position(|country| country.iso3 == iso3)
+                .expect("country should be catalogued")
+        };
+        let decoded = decode(
+            include_bytes!("../../../assets/world-v2.bin"),
+            repository_root,
+        )
+        .expect("committed asset should decode");
+        let entry = |first: usize, second: usize| first * 196 + second;
+
+        let france_spain = entry(index("FRA"), index("ESP"));
+        assert_eq!(decoded.distances_km[france_spain], 0);
+        assert!(decoded.adjacency[france_spain]);
+
+        let united_states_russia = entry(index("USA"), index("RUS"));
+        assert!(!decoded.adjacency[united_states_russia]);
+        assert!(decoded.distances_km[united_states_russia] < 100);
     }
 }
