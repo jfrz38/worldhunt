@@ -11,14 +11,15 @@ usable across modern terminal color capabilities.
 
 ## Dependencies
 
-- Iteration 003 provides the raster, borders, and anchors.
+- Iteration 003 provides the offline Web Mercator basemap, country overlays,
+  details, and anchors.
 - Iteration 005 provides game state and accepted guesses.
 - [TUI design](../tui-design.md) defines visual behavior.
 
 ## Scope
 
 - Responsive map viewport and aspect-ratio fitting.
-- Half-block rendering with two vertical samples per terminal cell.
+- Braille rendering with eight samples per terminal cell.
 - Country styles based on current game state.
 - Truecolor, ANSI 256-color, and monochrome themes.
 - Distance bands, borders, neutral territories, water, and win color.
@@ -28,7 +29,7 @@ usable across modern terminal color capabilities.
 
 ## Out of Scope
 
-- Text input, complete attempt panel, zoom, animation, and mouse interaction.
+- Text input, complete attempt panel, animation, and mouse interaction.
 - Alternative projections or a globe.
 
 ## Tasks
@@ -36,8 +37,8 @@ usable across modern terminal color capabilities.
 - [ ] Implement layout, map, and theme modules under `infrastructure/tui`.
 - [ ] Define renderer inputs that expose neither mutable domain state nor
   application internals.
-- [ ] Fit the `2.4:1` map into an arbitrary Ratatui rectangle.
-- [ ] Sample two vertical map pixels into each `▀` cell.
+- [ ] Fit the current Web Mercator viewport into an arbitrary Ratatui rectangle.
+- [ ] Sample each map cell into a 2 by 4 Braille grid.
 - [ ] Preserve country identity while downsampling the source raster.
 - [ ] Render water, unguessed land, neutral land, and borders distinctly.
 - [ ] Define stable absolute distance bands.

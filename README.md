@@ -21,8 +21,8 @@ make run
 ```
 
 The application enters the terminal's alternate screen. Press `Esc` or
-`Ctrl+C` to exit. Resizing the terminal redraws the placeholder with its current
-dimensions.
+`Ctrl+C` to exit. Use `+`/`-` to zoom and arrows or `hjkl` to pan; resizing
+redraws the offline map.
 
 ## Quality Checks
 

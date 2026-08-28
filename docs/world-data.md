@@ -92,6 +92,15 @@ distance. Reducing terminal resolution may still hide small countries, so each
 playable country also has a validated visual anchor that can be marked after it
 is guessed.
 
+## Map Assets
+
+`world-v1.bin` is the deterministic equirectangular preprocessing asset. It
+contains raster identifiers, borders, and anchors, and will gain proximity
+sections in iteration 004. The active TUI instead renders embedded Web Mercator
+OpenStreetMap basemap tiles, country-ID overlay tiles, and a small details
+asset. Those representations share stable catalog indexes but are not used for
+territorial distance calculations.
+
 ## Visual Anchors
 
 An anchor is used for terminal markers and possible future labels. It is not a
@@ -137,7 +146,9 @@ show `Borders target` instead of `0 km` for an incorrect neighboring guess.
 
 ## Regeneration
 
-The generator will provide a normal mode that writes the asset and a `--check`
-mode that regenerates in memory and compares against the committed result. The
-exact Cargo command and asset format will be added when iteration 003 chooses
-the tool package name and serialization format.
+The generator provides a normal mode that writes the assets and a `--check`
+mode that regenerates in memory and compares against the committed result:
+
+```sh
+cargo run --release -p world-data -- generate --check
+```

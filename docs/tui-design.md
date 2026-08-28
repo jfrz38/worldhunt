@@ -3,9 +3,8 @@
 ## Visual Direction
 
 WorldHunt is a colored terminal application, not a monochrome ASCII drawing.
-The map uses Unicode half-block characters such as `▀`, allowing one terminal
-cell to represent two vertically stacked map samples through foreground and
-background colors.
+The map uses Unicode Braille characters, allowing one terminal cell to
+represent a 2 by 4 grid of map samples.
 
 The design prioritizes a recognizable map, readable clues, and restrained
 decoration. The game must remain understandable without relying on color alone.
@@ -38,6 +37,9 @@ cases rather than assumed from terminal character dimensions.
 | --- | --- |
 | Printable text | Edit the country guess |
 | Backspace | Delete the previous input character |
+| `+` / `-` | Zoom in or out |
+| Mouse wheel | Zoom in or out |
+| Arrow keys / `hjkl` | Pan the map |
 | Enter | Submit the current guess |
 | Esc | Quit |
 | Ctrl+C | Quit |
@@ -89,13 +91,19 @@ Capability detection and explicit override behavior will be finalized during
 iteration 006. Incorrect capability detection must degrade appearance, not
 break gameplay.
 
+## Map Navigation
+
+The MVP starts centered on Spain. Zoom changes between the embedded zoom-zero
+and zoom-one vector tiles; longitude wraps while latitude remains clamped to
+the available source coverage. Resize redraws the current viewport without
+resetting navigation or game state.
+
 ## Responsive Rendering
 
-The internal map raster is sampled into the largest available rectangle while
-preserving its `2.4:1` pixel ratio. Because each half-block cell carries two
-vertical pixels, terminal row calculations account for the doubled vertical
-sample count. Resizing recomputes layout and sampling without rebuilding world
-data or resetting the game.
+The renderer samples the current Web Mercator viewport into the largest
+available Braille grid. Each cell carries eight samples. Resizing recomputes
+the viewport without rebuilding world data or resetting navigation or game
+state.
 
 The attempt list shows as much history as fits. When it overflows, the most
 recent attempts remain visible and the total attempt count remains available.

@@ -28,7 +28,7 @@ reported as `Borders target` instead of `0 km`.
   states, Palestine, Vatican City, and Western Sahara.
 - English canonical names and explicit English aliases.
 - Random, unlimited local games.
-- A flat, responsive world map rendered in the terminal.
+- A responsive, zoomable Web Mercator world map rendered in the terminal.
 - Persistent coloring of all guesses during the current game.
 - Minimum geodesic distance between country territories.
 - Exact distance in the attempt history, rounded to kilometers.
@@ -66,7 +66,6 @@ must produce a recoverable message and preserve the current game.
 - Online accounts, leaderboards, telemetry, and network services.
 - Sharing result grids.
 - Mouse selection.
-- Zoom and pan.
 - A rotatable globe or alternative map projections.
 - Languages other than English.
 - User-selectable country catalogs or territorial policies.

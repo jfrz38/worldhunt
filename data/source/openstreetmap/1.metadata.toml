@@ -1,4 +1,4 @@
-# Experimental offline zoom-1 OpenStreetMap basemap used by the WorldHunt TUI.
+# Offline zoom-1 OpenStreetMap basemap used by the WorldHunt TUI.
 source_repository = "https://www.openstreetmap.org/"
 retrieved_on = "2026-08-27"
 format = "Mapbox Vector Tile 2.1, gzip compressed"

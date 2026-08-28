@@ -1,4 +1,4 @@
-# Experimental zoom-0 OpenStreetMap basemap used only by `world-data preview`.
+# Offline zoom-0 OpenStreetMap basemap used by the WorldHunt TUI and preview.
 source_repository = "https://www.openstreetmap.org/"
 retrieved_on = "2026-08-27"
 format = "Mapbox Vector Tile 2.1, gzip compressed"
