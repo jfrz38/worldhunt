@@ -26,10 +26,16 @@ lint: ## run Clippy with warnings denied
 test: ## run all workspace tests
 	$(CARGO) test --workspace
 
-.PHONY: data-validate check ci
+.PHONY: data-validate data-generate data-check check ci
 data-validate: ## validate the committed country catalog and source snapshot
 	$(CARGO) run -p world-data -- validate
 
-check: fmt-check lint test data-validate ## run all local quality checks
+data-generate: ## regenerate embedded world-map assets and country overlay
+	$(CARGO) run --release -p world-data -- generate
+
+data-check: ## verify committed world-map assets and country overlay are current
+	$(CARGO) run --release -p world-data -- generate --check
+
+check: fmt-check lint test data-validate data-check ## run all local quality checks
 
 ci: check build ## run the deterministic CI checks

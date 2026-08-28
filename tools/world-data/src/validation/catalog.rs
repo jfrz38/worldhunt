@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 
-const EXPECTED_COUNTRY_COUNT: usize = 195;
+const EXPECTED_COUNTRY_COUNT: usize = 196;
 
 pub(super) fn validate(catalog: &Catalog, catalog_path: &Path) -> Result<(), String> {
     if catalog.countries.len() != EXPECTED_COUNTRY_COUNT {

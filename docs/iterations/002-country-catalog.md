@@ -1,8 +1,8 @@
 # Iteration 002: Country Catalog
 
-Status: In Progress
+Status: Completed
 Started: 2026-08-27
-Completed:
+Completed: 2026-08-27
 
 ## Goal
 
@@ -12,12 +12,12 @@ source geographic snapshot with complete provenance and licensing.
 ## Dependencies
 
 - Iteration 001 provides the Cargo workspace and test infrastructure.
-- [ADR 0004](../decisions/0004-playable-countries.md) defines the 195-country
+- [ADR 0004](../decisions/0004-playable-countries.md) defines the 196-country
   policy.
 
 ## Scope
 
-- Curated 195-country catalog.
+- Curated 196-country catalog.
 - Stable ISO3 mapping, English canonical names, and English aliases.
 - Input normalization rules needed to validate alias uniqueness.
 - Versioned source boundary snapshot.
@@ -34,7 +34,7 @@ source geographic snapshot with complete provenance and licensing.
 ## Tasks
 
 - [x] Add the `tools/world-data` workspace package.
-- [x] Add `data/countries.toml` with the 195 selected countries.
+- [x] Add `data/countries.toml` with the 196 selected countries.
 - [x] Define stable canonical names, ISO3 values, and common English aliases.
 - [x] Define normalization for case, whitespace, punctuation, and diacritics.
 - [x] Reject aliases that become ambiguous after normalization.
@@ -51,7 +51,7 @@ source geographic snapshot with complete provenance and licensing.
 
 ## Acceptance Criteria
 
-- [x] Exactly 195 playable countries validate successfully.
+- [x] Exactly 196 playable countries validate successfully.
 - [x] Every ISO3 value and canonical name is unique.
 - [x] Every normalized canonical name and alias resolves unambiguously.
 - [x] Every catalog country maps to source geometry.
@@ -66,7 +66,7 @@ source geographic snapshot with complete provenance and licensing.
 
 - `make check`: passed locally on 2026-08-27. This ran formatting, Clippy with
   warnings denied, 20 workspace unit tests, and `world-data validate`.
-- `cargo run -p world-data -- validate`: passed locally; 195 playable countries,
+- `cargo run -p world-data -- validate`: passed locally; 196 playable countries,
   196 source mappings, and 60 reported non-playable source records.
 - Snapshot SHA-256: verified as
   `fabbb96742b91183f4964d94e9dca7be654e32d2beb0c4cf7450d7f185093eee`.
@@ -90,4 +90,5 @@ None yet.
 
 ## Outcome
 
-Pending merge into `develop` and post-merge verification.
+Merged through PR [#2](https://github.com/jfrz38/worldhunt/pull/2) and verified
+on `develop` before iteration 003 started.

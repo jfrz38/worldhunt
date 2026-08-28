@@ -4,7 +4,7 @@ use std::path::Path;
 
 fn valid_catalog() -> Catalog {
     Catalog {
-        countries: (0..195)
+        countries: (0..196)
             .map(|index| Country {
                 iso3: format!(
                     "A{}{}",

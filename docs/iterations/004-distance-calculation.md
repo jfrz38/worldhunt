@@ -20,7 +20,7 @@ playable countries, including islands and antimeridian cases.
 - Shared-border and overlap detection.
 - Geodesic minimum-distance approximation between country boundaries.
 - Long-segment densification and spatial candidate indexing.
-- Symmetric adjacency and `195 x 195` distance matrices.
+- Symmetric adjacency and `196 x 196` distance matrices.
 - Independent reference cases and documented tolerance.
 - Distance sections in the generated asset and validated runtime lookup.
 - A validated infrastructure lookup over the decoded proximity data.
@@ -52,7 +52,7 @@ playable countries, including islands and antimeridian cases.
 
 ## Acceptance Criteria
 
-- [ ] Distance and adjacency matrices have exactly 195 rows and columns.
+- [ ] Distance and adjacency matrices have exactly 196 rows and columns.
 - [ ] Both matrices are symmetric and all distance diagonal values are zero.
 - [ ] France and Spain are adjacent.
 - [ ] The United States and Russia are geographically close through Alaska.

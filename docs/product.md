@@ -24,8 +24,8 @@ reported as `Borders target` instead of `0 km`.
 
 ## MVP Scope
 
-- A curated catalog of 195 playable countries: 193 United Nations member
-  states, Palestine, and Vatican City.
+- A curated catalog of 196 playable countries: 193 United Nations member
+  states, Palestine, Vatican City, and Western Sahara.
 - English canonical names and explicit English aliases.
 - Random, unlimited local games.
 - A flat, responsive world map rendered in the terminal.
@@ -78,5 +78,5 @@ These features may be proposed later as new iterations and decision records.
 
 The MVP is complete when a user can download and run WorldHunt without an
 external data file or network connection, play a full game against any of the
-195 targets, understand every clue through map color and textual distance, and
+196 targets, understand every clue through map color and textual distance, and
 exit without leaving the terminal in an altered state.

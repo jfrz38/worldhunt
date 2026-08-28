@@ -32,7 +32,7 @@ unstructured runtime value.
 
 ## Catalog
 
-`data/countries.toml` defines the stable set of 195 playable countries and maps
+`data/countries.toml` defines the stable set of 196 playable countries and maps
 each one to a source geometry. It also defines canonical English names and
 aliases. Dataset records outside that catalog remain non-playable unless an
 explicit mapping says otherwise.
@@ -77,14 +77,15 @@ would discard political identity and shared borders.
 
 ## Map Projection and Raster
 
-The MVP uses a Plate Carree/equirectangular world raster with longitude mapped
-linearly from -180 to 180 and latitude from 90 to -90. The initial internal
-resolution target is `720 x 360`, subject to measurement during iteration 003.
+The MVP uses a Plate Carree/equirectangular map cropped below `60 degrees S`;
+longitude maps linearly from -180 to 180 and latitude from 90 to -60. The
+internal raster is `720 x 300`.
 
-Each raster sample stores a country or reserved land/water identifier. A border
-mask records transitions between different territories. Rasterization uses
-coverage or supersampling rather than testing only the center point, because a
-center-only low-resolution raster removes many small countries and islands.
+Each raster sample stores a country or reserved land/water identifier. A
+one-cell border mask records coastlines and transitions between territories.
+Rasterization uses coverage or supersampling rather than testing only the center
+point, because a center-only low-resolution raster removes many small countries
+and islands.
 
 The raster is a rendering representation, not the source used for geographic
 distance. Reducing terminal resolution may still hide small countries, so each
@@ -118,12 +119,12 @@ acceptable approximation target is within 10 km, to be confirmed against known
 and independently calculated cases.
 
 Distances are rounded to whole kilometers and stored in a symmetric
-`195 x 195` matrix of `u16` values. Adjacency is stored separately so the UI can
+`196 x 196` matrix of `u16` values. Adjacency is stored separately so the UI can
 show `Borders target` instead of `0 km` for an incorrect neighboring guess.
 
 ## Required Invariants
 
-- Exactly 195 playable countries exist.
+- Exactly 196 playable countries exist.
 - Every playable country resolves to valid geometry.
 - Canonical names, ISO3 values, and normalized aliases are unambiguous.
 - Every raster identifier is known or reserved.
