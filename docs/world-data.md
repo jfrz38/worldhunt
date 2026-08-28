@@ -121,11 +121,13 @@ dependency records are not automatically merged. Touching or overlapping
 territories are adjacent and have zero territorial separation.
 
 Euclidean distance in longitude and latitude is not valid for gameplay because
-it distorts high latitudes and fails at the antimeridian. The generator will
-use spherical or ellipsoidal geodesic calculations, densify long boundary
-segments, and use a spatial index to reduce candidate comparisons. The initial
-acceptable approximation target is within 10 km, to be confirmed against known
-and independently calculated cases.
+it distorts high latitudes and fails at the antimeridian. The generator uses
+WGS84 ellipsoidal distances. It densifies source boundary segments at no more
+than 5 km apart and indexes the resulting ECEF points in an R-tree before
+evaluating the closest candidates. The initial acceptable approximation target
+is within 10 km, confirmed against GeographicLib reference paths. Distances
+round to the nearest whole kilometer; adjacency remains a separate exact
+topology result, so a non-adjacent sub-kilometer gap can still encode as `0 km`.
 
 Distances are rounded to whole kilometers and stored in a symmetric
 `196 x 196` matrix of `u16` values. Adjacency is stored separately so the UI can
