@@ -1,5 +1,8 @@
 use super::{TilePosition, Viewport, fill_country_polygon};
 use crate::infrastructure::tui::mvt::{self, Tile};
+const COUNTRY_COUNT: usize = 196;
+const NEUTRAL_LAND: usize = (u16::MAX - 1) as usize;
+const WATER: usize = u16::MAX as usize;
 
 pub(super) struct CountryOverlay {
     zoom_zero: Tile,
@@ -9,27 +12,31 @@ pub(super) struct CountryOverlay {
 
 impl CountryOverlay {
     pub(super) fn load() -> Result<Self, String> {
+        let zoom_zero = mvt::decode(include_bytes!(
+            "../../../../assets/country-map-v1/0_0_0.pbf.gz"
+        ))?;
+        let zoom_one = [
+            mvt::decode(include_bytes!(
+                "../../../../assets/country-map-v1/1_0_0.pbf.gz"
+            ))?,
+            mvt::decode(include_bytes!(
+                "../../../../assets/country-map-v1/1_1_0.pbf.gz"
+            ))?,
+            mvt::decode(include_bytes!(
+                "../../../../assets/country-map-v1/1_0_1.pbf.gz"
+            ))?,
+            mvt::decode(include_bytes!(
+                "../../../../assets/country-map-v1/1_1_1.pbf.gz"
+            ))?,
+        ];
+        let anchors = decode_anchors(include_bytes!(
+            "../../../../assets/country-map-v1/anchors-v1.bin"
+        ))?;
+        validate_overlay(&zoom_zero, &zoom_one, &anchors)?;
         Ok(Self {
-            zoom_zero: mvt::decode(include_bytes!(
-                "../../../../assets/country-map-v1/0_0_0.pbf.gz"
-            ))?,
-            zoom_one: [
-                mvt::decode(include_bytes!(
-                    "../../../../assets/country-map-v1/1_0_0.pbf.gz"
-                ))?,
-                mvt::decode(include_bytes!(
-                    "../../../../assets/country-map-v1/1_1_0.pbf.gz"
-                ))?,
-                mvt::decode(include_bytes!(
-                    "../../../../assets/country-map-v1/1_0_1.pbf.gz"
-                ))?,
-                mvt::decode(include_bytes!(
-                    "../../../../assets/country-map-v1/1_1_1.pbf.gz"
-                ))?,
-            ],
-            anchors: decode_anchors(include_bytes!(
-                "../../../../assets/country-map-v1/anchors-v1.bin"
-            ))?,
+            zoom_zero,
+            zoom_one,
+            anchors,
         })
     }
 
@@ -88,7 +95,7 @@ fn decode_anchors(bytes: &[u8]) -> Result<Vec<(f64, f64)>, String> {
     }
     let count = usize::from(read_u16(bytes, 6)?);
     let expected_length = 8 + count * 8;
-    if bytes.len() != expected_length || count == 0 {
+    if bytes.len() != expected_length || count != COUNTRY_COUNT {
         return Err("country anchor asset has an invalid length".to_owned());
     }
     (0..count)
@@ -101,6 +108,44 @@ fn decode_anchors(bytes: &[u8]) -> Result<Vec<(f64, f64)>, String> {
                 .ok_or_else(|| "country anchor asset has an out-of-range point".to_owned())
         })
         .collect()
+}
+
+fn validate_overlay(
+    zoom_zero: &Tile,
+    zoom_one: &[Tile; 4],
+    anchors: &[(f64, f64)],
+) -> Result<(), String> {
+    for tile in std::iter::once(zoom_zero).chain(zoom_one) {
+        let layer = tile
+            .layers
+            .iter()
+            .find(|layer| layer.name == "country")
+            .ok_or_else(|| "country overlay tile has no country layer".to_owned())?;
+        if layer.version != 2 || layer.extent.unwrap_or_default() == 0 {
+            return Err("country overlay has an invalid layer header".to_owned());
+        }
+        for feature in &layer.features {
+            if feature.tags.len() % 2 != 0 {
+                return Err("country overlay has malformed feature tags".to_owned());
+            }
+            let country_id = mvt::unsigned_property(layer, feature, "country_id")
+                .ok_or_else(|| "country overlay feature has no country identifier".to_owned())?;
+            let country_id = usize::try_from(country_id)
+                .map_err(|_| "country overlay has an invalid country identifier".to_owned())?;
+            if country_id == NEUTRAL_LAND || country_id == WATER {
+                continue;
+            }
+            if country_id >= COUNTRY_COUNT {
+                return Err(format!(
+                    "country overlay has an unknown country identifier: {country_id}"
+                ));
+            }
+        }
+    }
+    if anchors.len() != COUNTRY_COUNT {
+        return Err("country overlay has an invalid anchor count".to_owned());
+    }
+    Ok(())
 }
 
 fn read_u16(bytes: &[u8], offset: usize) -> Result<u16, String> {
@@ -121,7 +166,8 @@ fn read_u32(bytes: &[u8], offset: usize) -> Result<u32, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::decode_anchors;
+    use super::{COUNTRY_COUNT, decode_anchors, validate_overlay};
+    use crate::infrastructure::tui::mvt::Tile;
 
     #[test]
     fn decodes_the_committed_anchor_asset() {
@@ -131,12 +177,20 @@ mod tests {
             ))
             .expect("anchors should decode")
             .len(),
-            196
+            COUNTRY_COUNT
         );
     }
 
     #[test]
     fn rejects_invalid_anchor_assets() {
         assert!(decode_anchors(b"WHCA").is_err());
+    }
+
+    #[test]
+    fn rejects_a_tile_without_a_country_layer() {
+        let tile = Tile { layers: Vec::new() };
+        let zoom_one = [tile.clone(), tile.clone(), tile.clone(), tile.clone()];
+
+        assert!(validate_overlay(&tile, &zoom_one, &vec![(0.0, 0.0); COUNTRY_COUNT]).is_err());
     }
 }

@@ -9,8 +9,10 @@ use super::{TerminalControl, TerminalSession, with_terminal};
 
 const ENABLE_RAW: &str = "enable_raw";
 const ENTER_SCREEN: &str = "enter_screen";
+const ENABLE_MOUSE: &str = "enable_mouse";
 const HIDE_CURSOR: &str = "hide_cursor";
 const SHOW_CURSOR: &str = "show_cursor";
+const DISABLE_MOUSE: &str = "disable_mouse";
 const LEAVE_SCREEN: &str = "leave_screen";
 const DISABLE_RAW: &str = "disable_raw";
 
@@ -58,12 +60,20 @@ impl TerminalControl for FakeControl {
         self.call(ENTER_SCREEN)
     }
 
+    fn enable_mouse_capture(&mut self) -> io::Result<()> {
+        self.call(ENABLE_MOUSE)
+    }
+
     fn hide_cursor(&mut self) -> io::Result<()> {
         self.call(HIDE_CURSOR)
     }
 
     fn show_cursor(&mut self) -> io::Result<()> {
         self.call(SHOW_CURSOR)
+    }
+
+    fn disable_mouse_capture(&mut self) -> io::Result<()> {
+        self.call(DISABLE_MOUSE)
     }
 
     fn leave_alternate_screen(&mut self) -> io::Result<()> {
@@ -87,8 +97,10 @@ fn starts_and_restores_in_reverse_order() {
         [
             ENABLE_RAW,
             ENTER_SCREEN,
+            ENABLE_MOUSE,
             HIDE_CURSOR,
             SHOW_CURSOR,
+            DISABLE_MOUSE,
             LEAVE_SCREEN,
             DISABLE_RAW,
         ]
@@ -97,18 +109,18 @@ fn starts_and_restores_in_reverse_order() {
 
 #[test]
 fn rolls_back_completed_steps_when_setup_fails() {
-    let control = FakeControl::new(&[HIDE_CURSOR]);
+    let control = FakeControl::new(&[ENABLE_MOUSE]);
     let observer = control.clone();
 
     let error = with_terminal(control, || Ok(())).unwrap_err();
 
-    assert_eq!(error.to_string(), HIDE_CURSOR);
+    assert_eq!(error.to_string(), ENABLE_MOUSE);
     assert_eq!(
         observer.calls(),
         [
             ENABLE_RAW,
             ENTER_SCREEN,
-            HIDE_CURSOR,
+            ENABLE_MOUSE,
             LEAVE_SCREEN,
             DISABLE_RAW,
         ]
@@ -125,12 +137,12 @@ fn restoration_is_idempotent() {
     session.restore().unwrap();
     drop(session);
 
-    assert_eq!(observer.calls().len(), 6);
+    assert_eq!(observer.calls().len(), 8);
 }
 
 #[test]
 fn restoration_attempts_every_step_and_returns_the_first_error() {
-    let control = FakeControl::new(&[SHOW_CURSOR, LEAVE_SCREEN, DISABLE_RAW]);
+    let control = FakeControl::new(&[SHOW_CURSOR, DISABLE_MOUSE, LEAVE_SCREEN, DISABLE_RAW]);
     let observer = control.clone();
     let mut session = TerminalSession::start(control).unwrap();
 
@@ -142,8 +154,10 @@ fn restoration_attempts_every_step_and_returns_the_first_error() {
         [
             ENABLE_RAW,
             ENTER_SCREEN,
+            ENABLE_MOUSE,
             HIDE_CURSOR,
             SHOW_CURSOR,
+            DISABLE_MOUSE,
             LEAVE_SCREEN,
             DISABLE_RAW,
         ]
@@ -158,7 +172,7 @@ fn restores_after_an_operation_error() {
     let error = with_terminal(control, || Err::<(), _>(io::Error::other("operation"))).unwrap_err();
 
     assert_eq!(error.to_string(), "operation");
-    assert_eq!(observer.calls().len(), 6);
+    assert_eq!(observer.calls().len(), 8);
 }
 
 #[test]
@@ -171,5 +185,5 @@ fn restores_while_unwinding_a_panic() {
     }));
 
     assert!(result.is_err());
-    assert_eq!(observer.calls().len(), 6);
+    assert_eq!(observer.calls().len(), 8);
 }

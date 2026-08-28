@@ -5,9 +5,12 @@ mod terminal;
 #[cfg(test)]
 mod tests;
 
-use std::io::{self, stdout};
+use std::{
+    io::{self, stdout},
+    time::Duration,
+};
 
-use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers, MouseEventKind};
 use ratatui::{Terminal, backend::CrosstermBackend};
 
 use self::terminal::{CrosstermControl, with_terminal};
@@ -23,22 +26,30 @@ fn run_event_loop() -> io::Result<()> {
     draw(&mut terminal, &map)?;
 
     loop {
-        match event_action(event::read()?) {
-            EventAction::Quit => return Ok(()),
-            EventAction::ZoomIn => {
-                map.zoom_in();
-                draw(&mut terminal, &map)?;
+        let mut redraw = false;
+        for action in pending_actions(event_action(event::read()?))? {
+            match action {
+                EventAction::Quit => return Ok(()),
+                EventAction::Zoom(steps) => {
+                    for _ in 0..steps.unsigned_abs() {
+                        if steps.is_positive() {
+                            map.zoom_in();
+                        } else {
+                            map.zoom_out();
+                        }
+                    }
+                    redraw = true;
+                }
+                EventAction::Pan(horizontal, vertical) => {
+                    map.pan(horizontal, vertical);
+                    redraw = true;
+                }
+                EventAction::Redraw => redraw = true,
+                EventAction::Wait => {}
             }
-            EventAction::ZoomOut => {
-                map.zoom_out();
-                draw(&mut terminal, &map)?;
-            }
-            EventAction::Pan(horizontal, vertical) => {
-                map.pan(horizontal, vertical);
-                draw(&mut terminal, &map)?;
-            }
-            EventAction::Redraw => draw(&mut terminal, &map)?,
-            EventAction::Wait => {}
+        }
+        if redraw {
+            draw(&mut terminal, &map)?;
         }
     }
 }
@@ -56,11 +67,18 @@ fn draw(
 #[derive(Debug, PartialEq)]
 enum EventAction {
     Quit,
-    ZoomIn,
-    ZoomOut,
+    Zoom(i8),
     Pan(f64, f64),
     Redraw,
     Wait,
+}
+
+fn pending_actions(action: EventAction) -> io::Result<Vec<EventAction>> {
+    let mut actions = vec![action];
+    while event::poll(Duration::ZERO)? {
+        actions.push(event_action(event::read()?));
+    }
+    Ok(actions)
 }
 
 fn event_action(event: Event) -> EventAction {
@@ -74,12 +92,17 @@ fn event_action(event: Event) -> EventAction {
             {
                 EventAction::Quit
             }
-            KeyCode::Char('+') | KeyCode::Char('=') => EventAction::ZoomIn,
-            KeyCode::Char('-') | KeyCode::Char('_') => EventAction::ZoomOut,
+            KeyCode::Char('+') | KeyCode::Char('=') => EventAction::Zoom(1),
+            KeyCode::Char('-') | KeyCode::Char('_') => EventAction::Zoom(-1),
             KeyCode::Left | KeyCode::Char('h') => EventAction::Pan(-1.0, 0.0),
             KeyCode::Right | KeyCode::Char('l') => EventAction::Pan(1.0, 0.0),
             KeyCode::Up | KeyCode::Char('k') => EventAction::Pan(0.0, -1.0),
             KeyCode::Down | KeyCode::Char('j') => EventAction::Pan(0.0, 1.0),
+            _ => EventAction::Wait,
+        },
+        Event::Mouse(mouse) => match mouse.kind {
+            MouseEventKind::ScrollUp => EventAction::Zoom(1),
+            MouseEventKind::ScrollDown => EventAction::Zoom(-1),
             _ => EventAction::Wait,
         },
         _ => EventAction::Wait,

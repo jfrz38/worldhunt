@@ -2,6 +2,7 @@ use std::io::{self, Stdout, stdout};
 
 use crossterm::{
     cursor::{Hide, Show},
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -12,8 +13,10 @@ mod tests;
 pub(super) trait TerminalControl {
     fn enable_raw_mode(&mut self) -> io::Result<()>;
     fn enter_alternate_screen(&mut self) -> io::Result<()>;
+    fn enable_mouse_capture(&mut self) -> io::Result<()>;
     fn hide_cursor(&mut self) -> io::Result<()>;
     fn show_cursor(&mut self) -> io::Result<()>;
+    fn disable_mouse_capture(&mut self) -> io::Result<()>;
     fn leave_alternate_screen(&mut self) -> io::Result<()>;
     fn disable_raw_mode(&mut self) -> io::Result<()>;
 }
@@ -37,12 +40,20 @@ impl TerminalControl for CrosstermControl {
         execute!(self.output, EnterAlternateScreen)
     }
 
+    fn enable_mouse_capture(&mut self) -> io::Result<()> {
+        execute!(self.output, EnableMouseCapture)
+    }
+
     fn hide_cursor(&mut self) -> io::Result<()> {
         execute!(self.output, Hide)
     }
 
     fn show_cursor(&mut self) -> io::Result<()> {
         execute!(self.output, Show)
+    }
+
+    fn disable_mouse_capture(&mut self) -> io::Result<()> {
+        execute!(self.output, DisableMouseCapture)
     }
 
     fn leave_alternate_screen(&mut self) -> io::Result<()> {
@@ -58,6 +69,7 @@ struct TerminalSession<C: TerminalControl> {
     control: C,
     raw_mode_enabled: bool,
     alternate_screen_entered: bool,
+    mouse_capture_enabled: bool,
     cursor_hidden: bool,
 }
 
@@ -67,6 +79,7 @@ impl<C: TerminalControl> TerminalSession<C> {
             control,
             raw_mode_enabled: false,
             alternate_screen_entered: false,
+            mouse_capture_enabled: false,
             cursor_hidden: false,
         };
 
@@ -78,6 +91,12 @@ impl<C: TerminalControl> TerminalSession<C> {
             return Err(error);
         }
         session.alternate_screen_entered = true;
+
+        if let Err(error) = session.control.enable_mouse_capture() {
+            let _ = session.restore();
+            return Err(error);
+        }
+        session.mouse_capture_enabled = true;
 
         if let Err(error) = session.control.hide_cursor() {
             let _ = session.restore();
@@ -94,6 +113,10 @@ impl<C: TerminalControl> TerminalSession<C> {
         if self.cursor_hidden {
             self.cursor_hidden = false;
             record_first_error(&mut first_error, self.control.show_cursor());
+        }
+        if self.mouse_capture_enabled {
+            self.mouse_capture_enabled = false;
+            record_first_error(&mut first_error, self.control.disable_mouse_capture());
         }
         if self.alternate_screen_entered {
             self.alternate_screen_entered = false;

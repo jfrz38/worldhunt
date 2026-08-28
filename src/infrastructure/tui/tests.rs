@@ -1,4 +1,6 @@
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
+use crossterm::event::{
+    Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers, MouseEvent, MouseEventKind,
+};
 
 use super::{EventAction, event_action};
 
@@ -46,4 +48,23 @@ fn key_release_does_not_quit() {
     });
 
     assert_eq!(event_action(event), EventAction::Wait);
+}
+
+#[test]
+fn mouse_wheel_zooms_without_panning() {
+    let up = Event::Mouse(MouseEvent {
+        kind: MouseEventKind::ScrollUp,
+        column: 0,
+        row: 0,
+        modifiers: KeyModifiers::NONE,
+    });
+    let down = Event::Mouse(MouseEvent {
+        kind: MouseEventKind::ScrollDown,
+        column: 0,
+        row: 0,
+        modifiers: KeyModifiers::NONE,
+    });
+
+    assert_eq!(event_action(up), EventAction::Zoom(1));
+    assert_eq!(event_action(down), EventAction::Zoom(-1));
 }
