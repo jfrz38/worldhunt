@@ -6,6 +6,7 @@ mod country_tiles;
 mod details;
 mod mvt;
 mod normalization;
+mod proximity;
 mod raster;
 mod source;
 mod validation;

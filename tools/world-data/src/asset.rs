@@ -7,6 +7,7 @@ use std::{
     fs,
     io::{IsTerminal, stdout},
     path::Path,
+    time::Instant,
 };
 use terminal_size::{Height, Width, terminal_size};
 
@@ -16,6 +17,15 @@ const HEADER_LENGTH: usize = 32;
 
 pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, String> {
     let validated = validation::load_validated_repository(repository_root)?;
+    let started = Instant::now();
+    let proximity = crate::proximity::generate(&validated)?;
+    let proximity_summary = format!(
+        "{} adjacent pairs, {} km maximum distance, {} boundary samples in {} ms",
+        proximity.adjacent_pair_count(),
+        proximity.maximum_distance_km(),
+        proximity.boundary_point_count(),
+        started.elapsed().as_millis()
+    );
     let raster = raster::rasterize(&validated)?;
     let bytes = encode(
         &raster.cells,
@@ -42,7 +52,7 @@ pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, Str
             ));
         }
         Ok(format!(
-            "{} and country tiles/map details are current ({} + {country_tiles_length} bytes, {island_count} Canary Island polygons)",
+            "{} and country tiles/map details are current ({} + {country_tiles_length} bytes, {island_count} Canary Island polygons; {proximity_summary})",
             path.display(),
             bytes.len()
         ))
@@ -56,7 +66,7 @@ pub fn generate_asset(repository_root: &Path, check: bool) -> Result<String, Str
             )
         })?;
         Ok(format!(
-            "generated {} and country tiles/map details ({} + {country_tiles_length} + {details_length} bytes, {}x{} raster)",
+            "generated {} and country tiles/map details ({} + {country_tiles_length} + {details_length} bytes, {}x{} raster; {proximity_summary})",
             path.display(),
             bytes.len(),
             WIDTH,
