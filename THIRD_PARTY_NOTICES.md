@@ -11,3 +11,11 @@ WorldHunt code is licensed under MIT. The geographic source data and derivative
 geographic data retain their applicable data licence and attribution. The exact
 snapshot URL, retrieval date, publisher, licence, and SHA-256 checksum are
 recorded in `data/source/world-boundaries.metadata.toml`.
+
+## OpenStreetMap
+
+The embedded basemap tiles under `data/source/openstreetmap/` contain data from
+[OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available
+under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/).
+WorldHunt shows the required OpenStreetMap attribution while the map is visible.
+Source metadata is recorded beside the tiles.

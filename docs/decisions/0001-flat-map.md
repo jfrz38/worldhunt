@@ -1,6 +1,6 @@
 # ADR 0001: Use a Flat World Map
 
-Status: Accepted  
+Status: Superseded by [ADR 0005](0005-zoomable-web-mercator-map.md)
 Date: 2026-08-26
 
 ## Context

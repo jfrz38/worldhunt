@@ -21,6 +21,7 @@ const DETAIL_ZOOM: f64 = 0.5;
 const INITIAL_ZOOM: f64 = 1.0;
 const SPAIN_CENTER_X: f64 = 0.489_711_666_7;
 const SPAIN_CENTER_Y: f64 = 0.377_063_141_2;
+const OSM_ATTRIBUTION: &str = "OpenStreetMap contributors";
 
 #[derive(Clone, Copy)]
 struct Viewport {
@@ -237,7 +238,10 @@ fn fill_geographic_land(
     let Some(&first) = ring.first() else { return };
     ring.push(first);
 
-    for y in 0..height {
+    let Some(rows) = visible_rows(&[ring.as_slice()], width, height) else {
+        return;
+    };
+    for y in rows {
         let mut intersections = ring_intersections(&ring, y as f64 + 0.5);
         intersections.sort_by(f64::total_cmp);
         for pair in intersections.chunks_exact(2) {
@@ -400,7 +404,10 @@ fn fill_polygon(
         .map(|ring| project_path(ring, extent, position, viewport))
         .filter(|ring| ring.len() >= 3)
         .collect();
-    for y in 0..viewport.height {
+    let Some(rows) = visible_rows(&rings, viewport.width, viewport.height) else {
+        return;
+    };
+    for y in rows {
         let mut intersections = rings
             .iter()
             .flat_map(|ring| ring_intersections(ring, y as f64 + 0.5))
@@ -429,7 +436,10 @@ fn fill_country_polygon(
         .map(|ring| project_path(ring, extent, position, viewport))
         .filter(|ring| ring.len() >= 3)
         .collect();
-    for y in 0..viewport.height {
+    let Some(rows) = visible_rows(&rings, viewport.width, viewport.height) else {
+        return;
+    };
+    for y in rows {
         let mut intersections = rings
             .iter()
             .flat_map(|ring| ring_intersections(ring, y as f64 + 0.5))
@@ -468,6 +478,38 @@ fn project_path(
             )
         })
         .collect()
+}
+
+fn visible_rows(
+    rings: &[impl AsRef<[(i32, i32)]>],
+    width: usize,
+    height: usize,
+) -> Option<std::ops::Range<usize>> {
+    let mut min_x = i32::MAX;
+    let mut max_x = i32::MIN;
+    let mut min_y = i32::MAX;
+    let mut max_y = i32::MIN;
+
+    for ring in rings {
+        for &(x, y) in ring.as_ref() {
+            min_x = min_x.min(x);
+            max_x = max_x.max(x);
+            min_y = min_y.min(y);
+            max_y = max_y.max(y);
+        }
+    }
+    if min_x == i32::MAX
+        || max_x < 0
+        || min_x >= width as i32
+        || max_y < 0
+        || min_y >= height as i32
+    {
+        return None;
+    }
+
+    let start = min_y.max(0) as usize;
+    let end = (max_y.saturating_add(1).max(0) as usize).min(height);
+    (start < end).then_some(start..end)
 }
 
 fn ring_intersections(ring: &[(i32, i32)], scanline: f64) -> Vec<f64> {
@@ -579,12 +621,16 @@ fn dominant_country(countries: &[u16], dot_width: usize, row: usize, column: usi
 }
 
 fn render_status(area: Rect, buffer: &mut Buffer, zoom: f64) {
-    let status = format!("  Zoom {zoom:.2}  |  +/- zoom  Arrows/hjkl pan  Esc quit");
+    let status = status_line(zoom);
     for (index, character) in status.chars().take(usize::from(area.width)).enumerate() {
         buffer[(area.x + index as u16, area.y + area.height - 1)]
             .set_symbol(&character.to_string())
             .set_style(Style::default().fg(Color::Gray).bg(Color::Black));
     }
+}
+
+fn status_line(zoom: f64) -> String {
+    format!("  {OSM_ATTRIBUTION}  |  Zoom {zoom:.2}  +/- zoom  Arrows/hjkl pan  Esc quit")
 }
 
 fn braille(mask: u8) -> String {
@@ -595,7 +641,10 @@ fn braille(mask: u8) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{INITIAL_ZOOM, Map, SPAIN_CENTER_X, SPAIN_CENTER_Y, dominant_country};
+    use super::{
+        INITIAL_ZOOM, Map, NORTH, SOUTH, SPAIN_CENTER_X, SPAIN_CENTER_Y, dominant_country,
+        status_line, visible_rows,
+    };
 
     #[test]
     fn loads_centered_on_spain_at_zoom_one() {
@@ -618,5 +667,45 @@ mod tests {
         let countries = [4, 4, 4, 4, 2, 2, 2, 2];
 
         assert_eq!(dominant_country(&countries, 2, 0, 0), 2);
+    }
+
+    #[test]
+    fn navigation_clamps_latitude_wraps_longitude_and_bounds_zoom() {
+        let mut map = Map::load().expect("map assets should load");
+
+        for _ in 0..16 {
+            map.zoom_in();
+        }
+        assert_eq!(map.zoom, 1.99);
+        map.pan(0.0, -100.0);
+        assert_eq!(map.center_y, NORTH);
+        map.pan(100.0, 0.0);
+        assert!((0.0..1.0).contains(&map.center_x));
+
+        for _ in 0..16 {
+            map.zoom_out();
+        }
+        assert_eq!(map.zoom, 0.0);
+        map.pan(0.0, 100.0);
+        assert_eq!(map.center_y, SOUTH);
+    }
+
+    #[test]
+    fn status_includes_openstreetmap_attribution() {
+        assert!(status_line(INITIAL_ZOOM).contains("OpenStreetMap contributors"));
+    }
+
+    #[test]
+    fn skips_polygons_outside_the_viewport() {
+        let rings = [vec![(20, 20), (30, 20), (30, 30), (20, 30), (20, 20)]];
+
+        assert_eq!(visible_rows(&rings, 10, 10), None);
+    }
+
+    #[test]
+    fn rasterizes_only_the_rows_covered_by_a_polygon() {
+        let rings = [vec![(2, 3), (7, 3), (7, 8), (2, 8), (2, 3)]];
+
+        assert_eq!(visible_rows(&rings, 10, 10), Some(3..9));
     }
 }

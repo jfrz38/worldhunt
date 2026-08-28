@@ -169,8 +169,10 @@ state, but it never mutates the game or decides business rules.
 
 ### World Data
 
-`infrastructure/world_data` decodes the legacy raster asset. The active TUI map
-embeds its OSM basemap, versioned country-ID overlay tiles, and anchors directly:
+`infrastructure/world_data` decodes the validated raster asset used by the data
+pipeline and reserved for future proximity sections. The active TUI map embeds
+an offline OSM basemap, versioned country-ID overlay tiles, anchors, and map
+details directly:
 
 - `decoder` validates magic, version, lengths, identifier ranges, and section
   consistency before exposing data.
@@ -181,9 +183,10 @@ embeds its OSM basemap, versioned country-ID overlay tiles, and anchors directly
   renderer without making them part of the domain model.
 
 The country overlay uses catalog indexes only; country names remain authoritative
-in `data/countries.toml`. It is Web-Mercator tiled to align with the zoomable
+in `data/countries.toml`. It is Web Mercator tiled to align with the zoomable
 Braille basemap and supplies renderer identity without exposing map geometry to
-the domain.
+the domain. The renderer always operates offline; OpenStreetMap attribution is
+presentation metadata, not a runtime dependency.
 
 The adapter maps raw encoded identifiers and records into domain values at its
 boundary. Domain code never parses source JSON, understands binary sections, or

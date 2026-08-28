@@ -27,10 +27,11 @@ when implementation starts, not when its plan is written.
 
 | ADR | Decision | Status |
 | --- | --- | --- |
-| [0001](decisions/0001-flat-map.md) | Use a flat equirectangular map | Accepted |
+| [0001](decisions/0001-flat-map.md) | Use a flat equirectangular map | Superseded |
 | [0002](decisions/0002-embedded-world-data.md) | Embed preprocessed world data | Accepted |
 | [0003](decisions/0003-country-distance.md) | Measure minimum geodesic territory distance | Accepted |
 | [0004](decisions/0004-playable-countries.md) | Use a curated catalog of 196 playable countries | Accepted |
+| [0005](decisions/0005-zoomable-web-mercator-map.md) | Use a zoomable Web Mercator map | Accepted |
 
 ## Iterations
 
@@ -38,7 +39,7 @@ when implementation starts, not when its plan is written.
 | --- | --- | --- |
 | [001](iterations/001-project-foundation.md) | Establish the Rust project and safe terminal lifecycle | Completed |
 | [002](iterations/002-country-catalog.md) | Define countries, aliases, provenance, and licenses | Completed |
-| [003](iterations/003-map-data-generator.md) | Generate an identity-preserving world raster | In Progress |
+| [003](iterations/003-map-data-generator.md) | Generate validated map assets and country overlays | In Progress |
 | [004](iterations/004-distance-calculation.md) | Precompute territorial distances and adjacency | Planned |
 | [005](iterations/005-game-domain.md) | Implement the game independently of the TUI | Planned |
 | [006](iterations/006-map-rendering.md) | Render a responsive colored terminal map | Planned |

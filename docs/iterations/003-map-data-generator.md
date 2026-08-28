@@ -13,7 +13,8 @@ geometry processing.
 ## Dependencies
 
 - Iteration 002 supplies the validated catalog and source snapshot.
-- [ADR 0001](../decisions/0001-flat-map.md) selects the map projection.
+- [ADR 0005](../decisions/0005-zoomable-web-mercator-map.md) selects the
+  active map projection and navigation.
 - [ADR 0002](../decisions/0002-embedded-world-data.md) selects preprocessing
   and embedding.
 
@@ -27,11 +28,13 @@ geometry processing.
 - Versioned deterministic binary asset without distances.
 - Infrastructure decoder and read-only map-data representation for runtime use.
 - Human-inspectable preview output.
+- Validated offline Web Mercator basemap and country-ID overlay assets for the
+  active Braille renderer.
 
 ## Out of Scope
 
 - Pairwise distance generation, game rules, and terminal widgets.
-- Zoom levels and projections other than equirectangular.
+- Game behavior, distance calculation, color themes, and playable TUI layout.
 
 ## Tasks
 
@@ -58,28 +61,28 @@ geometry processing.
 
 ## Acceptance Criteria
 
-- [ ] The raster preserves country identity and never globally unions all land.
-- [ ] Every raster value is a valid or reserved identifier.
-- [ ] Every playable country has a valid visual anchor.
-- [ ] Representative islands, holes, and small countries pass focused tests.
+- [x] The raster preserves country identity and never globally unions all land.
+- [x] Every raster value is a valid or reserved identifier.
+- [x] Every playable country has a valid visual anchor.
+- [x] Representative islands, holes, and small countries pass focused tests.
 - [x] The preview is recognizable, responsive, and uses correct world orientation.
-- [ ] Repeated generation produces byte-identical output on the supported
+- [x] Repeated generation produces byte-identical output on the supported
   generation environment.
-- [ ] The runtime decoder rejects invalid magic, unsupported versions, invalid
+- [x] The runtime decoder rejects invalid magic, unsupported versions, invalid
   lengths, and unknown identifiers.
-- [ ] Generated and encoded asset structures do not appear in domain or
+- [x] Generated and encoded asset structures do not appear in domain or
   application public APIs.
-- [ ] The chosen resolution and generated size are recorded in the outcome.
+- [x] The chosen resolution and generated size are recorded in the outcome.
 
 ## Verification
 
-- `cargo test --workspace`: passed locally on 2026-08-27 (35 tests).
-- `cargo clippy --all-targets --all-features -- -D warnings`: passed locally on
-  2026-08-27.
+- `make ci`: passed locally on 2026-08-28. This ran formatting, Clippy with
+  warnings denied, 47 workspace tests, catalog validation, deterministic asset
+  regeneration, and workspace build.
 - `cargo run --release -p world-data -- generate --check`: passed locally on
-  2026-08-27; the committed asset is byte-identical at 648,812 bytes.
-- `cargo run -p world-data -- preview`: passed locally; manually inspected the
-  responsive equirectangular Unicode preview.
+  2026-08-28; `world-v1.bin` is byte-identical at 648,816 bytes and the country
+  tiles/details total 271,670 bytes.
+- `cargo run -p world-data -- preview`: passed locally on 2026-08-28.
 
 ## Decisions
 
@@ -88,7 +91,7 @@ geometry processing.
   1 identify the format. Iteration 004 will introduce a new version when it
   adds distance data.
 - The selected internal raster is `720 x 300`, covering `90 degrees N` through
-  `60 degrees S`; its generated size is 648,812 bytes. This removes Antarctica
+  `60 degrees S`; its generated size is 648,816 bytes. This removes Antarctica
   and unused southern ocean from the game map. Four fixed sub-pixel samples
   select the highest coverage identifier; equal coverage resolves to the lowest
   stable catalog identifier.
@@ -99,11 +102,23 @@ geometry processing.
   coastlines and country borders at reduced terminal sizes. ANSI terminals use
   colored Unicode half-blocks; `NO_COLOR` and redirected output use a
   monochrome Unicode fallback.
+- ADR 0005 supersedes the planned fixed equirectangular TUI with an offline Web
+  Mercator Braille renderer. The raster remains the deterministic preprocessing
+  asset and future container for proximity data; the country overlay supplies
+  the active renderer's stable country identity.
 
 ## Deviations
 
-None yet.
+- The merged implementation added a Web Mercator OpenStreetMap basemap,
+  country-ID vector overlays, Braille rendering, zoom, and pan. These features
+  were originally assigned to later work and conflict with ADR 0001. This
+  closure records them through ADR 0005, adds offline attribution and runtime
+  overlay validation, and leaves game-state rendering, themes, anchors markers,
+  and layout to iterations 005 through 008.
 
 ## Outcome
 
-Pending.
+All branch acceptance criteria pass. The deterministic preprocessing raster is
+720 x 300 and 648,816 bytes; country overlays and map details total 271,670
+bytes. Completion remains pending the required post-merge verification on
+`develop`.
