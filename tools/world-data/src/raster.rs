@@ -214,13 +214,16 @@ fn contains_polygon(rings: &[Vec<Vec<f64>>], lon: f64, lat: f64) -> bool {
 
 fn point_in_ring(ring: &[Vec<f64>], lon: f64, lat: f64) -> bool {
     let mut inside = false;
-    for start in 0..ring.len() - 1 {
-        let end = start + 1;
-        let (x1, y1) = (unwrap_longitude(ring[start][0], lon), ring[start][1]);
-        let (x2, y2) = (unwrap_longitude(ring[end][0], lon), ring[end][1]);
+    let mut previous = (unwrap_longitude(ring[0][0], lon), ring[0][1]);
+    for point in ring.iter().skip(1) {
+        // Keep consecutive vertices together before comparing them with the query.
+        let current = (unwrap_longitude(point[0], previous.0), point[1]);
+        let (x1, y1) = previous;
+        let (x2, y2) = current;
         if (y1 > lat) != (y2 > lat) && lon < (x2 - x1) * (lat - y1) / (y2 - y1) + x1 {
             inside = !inside;
         }
+        previous = current;
     }
     inside
 }
@@ -284,12 +287,14 @@ fn source_anchor(id: u16, shapes: &[Shape<'_>]) -> Option<(u16, u16)> {
     for shape in shapes.iter().filter(|shape| shape.id == id) {
         for rings in shape.feature.geometry.as_ref()?.polygons() {
             let outer = rings.first()?;
+            let longitude_reference = outer.first()?[0];
             let (min_lon, max_lon, min_lat, max_lat) = outer.iter().fold(
                 (180.0_f64, -180.0_f64, 90.0_f64, -90.0_f64),
                 |bounds, point| {
+                    let longitude = unwrap_longitude(point[0], longitude_reference);
                     (
-                        bounds.0.min(point[0]),
-                        bounds.1.max(point[0]),
+                        bounds.0.min(longitude),
+                        bounds.1.max(longitude),
                         bounds.2.min(point[1]),
                         bounds.3.max(point[1]),
                     )
@@ -310,6 +315,7 @@ fn source_anchor(id: u16, shapes: &[Shape<'_>]) -> Option<(u16, u16)> {
 }
 
 fn project(lon: f64, lat: f64) -> (u16, u16) {
+    let lon = (lon + 180.0).rem_euclid(360.0) - 180.0;
     (
         ((lon + 180.0) * f64::from(WIDTH) / 360.0)
             .floor()
@@ -364,7 +370,7 @@ fn mark_transition(borders: &mut [u8], first: usize, second: usize, first_id: u1
 
 #[cfg(test)]
 mod tests {
-    use super::{WATER, contains_polygon, mark_transition, point_in_ring};
+    use super::{WATER, contains_polygon, mark_transition, point_in_ring, project};
     #[test]
     fn recognizes_an_outer_ring_and_a_hole() {
         let polygon = vec![
@@ -395,5 +401,25 @@ mod tests {
         mark_transition(&mut borders, 2, 3, WATER, 0);
 
         assert_eq!(borders, vec![1, 0, 0, 1]);
+    }
+
+    #[test]
+    fn recognizes_a_polygon_across_the_antimeridian() {
+        let ring = vec![
+            vec![179.0, 0.0],
+            vec![-179.0, 0.0],
+            vec![-179.0, 2.0],
+            vec![179.0, 2.0],
+            vec![179.0, 0.0],
+        ];
+
+        assert!(point_in_ring(&ring, 179.5, 1.0));
+        assert!(point_in_ring(&ring, -179.5, 1.0));
+        assert!(!point_in_ring(&ring, 0.0, 1.0));
+    }
+
+    #[test]
+    fn projects_wrapped_longitudes_to_the_same_cell() {
+        assert_eq!(project(181.0, 0.0), project(-179.0, 0.0));
     }
 }
