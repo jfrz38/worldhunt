@@ -48,29 +48,36 @@ second adds asset sections, decoding, and the infrastructure lookup.
 - [x] Compare selected distances with an independent geodesic reference.
 - [x] Add generator unit tests for synthetic polygons, islands, poles, and
   antimeridian cases.
-- [ ] Extend the asset and decoder without exposing geometry at runtime.
-- [ ] Implement validated constant-time matrix lookup in
+- [x] Extend the asset and decoder without exposing geometry at runtime.
+- [x] Implement validated constant-time matrix lookup in
   `infrastructure/world_data/proximity.rs`, ready to be adapted to the domain
   port in iteration 005.
 - [x] Record generation time, tolerance, and observed maximum error.
 
 ## Acceptance Criteria
 
-- [ ] Distance and adjacency matrices have exactly 196 rows and columns.
-- [ ] Both matrices are symmetric and all distance diagonal values are zero.
-- [ ] France and Spain are adjacent.
-- [ ] The United States and Russia are geographically close through Alaska.
-- [ ] Antimeridian test fixtures take the short path across longitude 180.
-- [ ] An archipelago uses its closest participating component.
-- [ ] Incorrect adjacent guesses can be distinguished from the correct target.
-- [ ] Reference cases satisfy the documented accuracy tolerance.
-- [ ] Runtime lookup is constant-time and performs no geometric calculation.
-- [ ] Matrix indexes, encoded values, and binary asset structures remain inside
+- [x] Distance and adjacency matrices have exactly 196 rows and columns.
+- [x] Both matrices are symmetric and all distance diagonal values are zero.
+- [x] France and Spain are adjacent.
+- [x] The United States and Russia are geographically close through Alaska.
+- [x] Antimeridian test fixtures take the short path across longitude 180.
+- [x] An archipelago uses its closest participating component.
+- [x] Incorrect adjacent guesses can be distinguished from the correct target.
+- [x] Reference cases satisfy the documented accuracy tolerance.
+- [x] Runtime lookup is constant-time and performs no geometric calculation.
+- [x] Matrix indexes, encoded values, and binary asset structures remain inside
   the world-data infrastructure module.
 
 ## Verification
 
-Not run; iteration has not started.
+- `cargo test --workspace`: passed on 2026-08-28 (36 world-data and 27 runtime
+  tests).
+- `cargo run --release -p world-data -- generate`: generated `world-v2.bin`.
+- `cargo run --release -p world-data -- generate --check`: passed on
+  2026-08-28; the generated asset is current.
+- `make ci`: formatting, Clippy, tests, catalog validation, and deterministic
+  generation passed. Its final workspace build is pending because Windows
+  denied removal of an already-open `target/debug/worldhunt.exe`.
 
 ## Decisions
 
@@ -85,6 +92,12 @@ Not run; iteration has not started.
   exhaustive point-pair comparison while preserving the 5 km sampling bound.
 - The adjacency diagonal is false. Distance diagonal values are zero. A
   non-adjacent gap below 500 m may legitimately round to zero kilometers.
+- `WHMP` version 2 has a 36-byte header. It stores full row-major `u16`
+  distances and validated byte-per-entry adjacency after the v1 raster,
+  border, and anchor sections. The runtime rejects v1 and future versions.
+- Runtime proximity remains private to `infrastructure/world_data`. Its lookup
+  returns adjacency and distance together by checked row-major index and does
+  not calculate geometry.
 
 ## Deviations
 
@@ -92,11 +105,11 @@ None yet.
 
 ## Outcome
 
-Part one is implemented in the generator only. `cargo run --release -p
-world-data -- generate --check` completed on 2026-08-28 in 6,848 ms: it
-generated 314,361 boundary samples, found 317 adjacent country pairs, and
-encoded a maximum distance of 19,341 km while leaving `world-v1.bin`
-byte-identical. Synthetic tests cover shared borders, antimeridian contact,
-archipelagos, long segments, WGS84 reference paths, and invalid matrices.
-Asset version 2, runtime decoding, and the infrastructure lookup remain for
-part two.
+Both parts are implemented. The generated `world-v2.bin` is 764,068 bytes:
+the 36-byte header is followed by the existing 648,784 bytes of sections,
+76,832 bytes of distances, and 38,416 bytes of adjacency data. It represents
+196 countries, 317 adjacent unordered pairs, and a maximum encoded distance of
+19,341 km. Generator and runtime tests cover v2 layout, malformed proximity
+sections, matrix invariants, France-Spain adjacency, United States-Russia
+proximity, and constant-time lookup. Formal completion remains pending merge
+and verification on `develop`.

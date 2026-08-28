@@ -17,9 +17,9 @@ Braille cells. The renderer embeds OpenStreetMap vector tiles for the basemap,
 versioned country-ID overlay tiles for game coloring, and a small detail asset
 for geographic corrections. Zoom and pan are MVP controls.
 
-The raster `world-v1.bin` remains an embedded, validated preprocessing asset.
-It supplies stable country identities and anchors to generation tooling and is
-reserved for future proximity sections; it is not the active TUI basemap.
+The versioned world asset remains an embedded, validated preprocessing asset.
+It supplies stable country identities, anchors, and precomputed proximity data
+to generation tooling; it is not the active TUI basemap.
 
 The map remains entirely local at runtime. OpenStreetMap attribution is shown
 in the TUI and recorded in third-party notices.

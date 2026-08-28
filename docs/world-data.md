@@ -63,10 +63,10 @@ the runtime decoder are external data concerns. They live in the world-data
 tool or `infrastructure/world_data` and never become domain or application
 models.
 
-At runtime, `infrastructure/world_data/catalog.rs` and `proximity.rs` map the
-validated decoded data to domain values and implement the `CountryCatalog` and
-`CountryProximity` traits from `domain/ports/`. Raster cells, borders, and
-visual anchors remain read-only renderer data exposed by
+At runtime, `infrastructure/world_data/proximity.rs` owns the validated decoded
+matrices and their private row-major lookup. Iteration 005 will adapt that data
+to the `CountryCatalog` and `CountryProximity` domain ports. Raster cells,
+borders, and visual anchors remain read-only renderer data exposed by
 `infrastructure/world_data/map_data.rs`; they are not game-domain concepts.
 
 This boundary allows the asset encoding and serialization technology to change
@@ -94,12 +94,15 @@ is guessed.
 
 ## Map Assets
 
-`world-v1.bin` is the deterministic equirectangular preprocessing asset. It
-contains raster identifiers, borders, and anchors, and will gain proximity
-sections in iteration 004. The active TUI instead renders embedded Web Mercator
-OpenStreetMap basemap tiles, country-ID overlay tiles, and a small details
-asset. Those representations share stable catalog indexes but are not used for
-territorial distance calculations.
+`world-v2.bin` is the deterministic equirectangular preprocessing and proximity
+asset. Its `WHMP` version-2 layout has a 36-byte header followed by raster
+identifiers, borders, anchors, a full row-major `u16` distance matrix, and a
+full row-major `u8` adjacency matrix (`0` or `1`). Matrix order is the stable
+catalog order and the runtime validates all lengths, diagonals, symmetry, and
+adjacent/zero-distance consistency before it exposes the data. The active TUI
+instead renders embedded Web Mercator OpenStreetMap basemap tiles, country-ID
+overlay tiles, and a small details asset. Those representations share stable
+catalog indexes but are not used for territorial distance calculations.
 
 ## Visual Anchors
 
@@ -143,6 +146,7 @@ show `Borders target` instead of `0 km` for an incorrect neighboring guess.
 - Distance matrix dimensions match the catalog.
 - Distance is symmetric and every diagonal entry is zero.
 - Adjacency is symmetric.
+- Adjacency diagonal values are false, and an adjacent pair has zero distance.
 - Generation is deterministic.
 - Antimeridian cases do not receive artificial world-spanning distances.
 
