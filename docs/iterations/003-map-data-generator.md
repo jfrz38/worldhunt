@@ -1,8 +1,8 @@
 # Iteration 003: Map Data Generator
 
-Status: In Progress
+Status: Completed
 Started: 2026-08-27
-Completed:
+Completed: 2026-08-28
 
 ## Goal
 
@@ -83,6 +83,9 @@ geometry processing.
   2026-08-28; `world-v1.bin` is byte-identical at 648,816 bytes and the country
   tiles/details total 271,670 bytes.
 - `cargo run -p world-data -- preview`: passed locally on 2026-08-28.
+- `make ci`: passed on `develop` on 2026-08-28. This ran formatting, Clippy
+  with warnings denied, 50 workspace tests, catalog validation, deterministic
+  asset regeneration, and the workspace build.
 
 ## Decisions
 
@@ -118,7 +121,6 @@ geometry processing.
 
 ## Outcome
 
-All branch acceptance criteria pass. The deterministic preprocessing raster is
-720 x 300 and 648,816 bytes; country overlays and map details total 271,670
-bytes. Completion remains pending the required post-merge verification on
-`develop`.
+All acceptance criteria pass. The deterministic preprocessing raster is 720 x
+300 and 648,816 bytes; country overlays and map details total 271,670 bytes.
+Post-merge verification passed on `develop`.

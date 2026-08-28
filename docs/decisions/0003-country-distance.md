@@ -23,6 +23,11 @@ territorial separation.
 Distance and adjacency are precomputed from detailed geometry. The game shows
 `Borders target` instead of `0 km` for an incorrect adjacent guess.
 
+The generator interprets source boundary segments as WGS84 geodesic paths. It
+uses exact topological contact or overlap for adjacency, samples each boundary
+at a maximum 5 km spacing, and rounds non-adjacent distances to whole
+kilometers.
+
 ## Consequences
 
 - Islands naturally contribute through their nearest component.

@@ -1,16 +1,16 @@
-use super::map_data::MapData;
+use super::{map_data::MapData, proximity::ProximityData};
 
 const MAGIC: &[u8; 4] = b"WHMP";
-const VERSION: u16 = 1;
-const HEADER_LENGTH: usize = 32;
+const VERSION: u16 = 2;
+const HEADER_LENGTH: usize = 36;
 const WATER: u16 = u16::MAX;
 const NEUTRAL_LAND: u16 = u16::MAX - 1;
 
 pub fn decode_embedded() -> Result<MapData, String> {
-    decode(include_bytes!("../../../assets/world-v1.bin"))
+    decode(include_bytes!("../../../assets/world-v2.bin")).map(|(map_data, _)| map_data)
 }
 
-fn decode(bytes: &[u8]) -> Result<MapData, String> {
+fn decode(bytes: &[u8]) -> Result<(MapData, ProximityData), String> {
     if bytes.len() < HEADER_LENGTH || &bytes[0..4] != MAGIC {
         return Err("world map asset has invalid magic or is truncated".to_owned());
     }
@@ -31,13 +31,20 @@ fn decode(bytes: &[u8]) -> Result<MapData, String> {
     let cells_length = read_u32(bytes, 16)? as usize;
     let borders_length = read_u32(bytes, 20)? as usize;
     let anchors_length = read_u32(bytes, 24)? as usize;
+    let distances_length = read_u32(bytes, 28)? as usize;
+    let adjacency_length = read_u32(bytes, 32)? as usize;
     let expected_cells = usize::from(width)
         .checked_mul(usize::from(height))
         .and_then(|count| count.checked_mul(2))
         .ok_or("world map dimensions overflow")?;
+    let matrix_entries = usize::from(country_count)
+        .checked_mul(usize::from(country_count))
+        .ok_or("world proximity country count overflows")?;
     if cells_length != expected_cells
         || borders_length != expected_cells / 2
         || anchors_length != usize::from(country_count) * 4
+        || distances_length != matrix_entries * 2
+        || adjacency_length != matrix_entries
     {
         return Err("world map asset section lengths are inconsistent".to_owned());
     }
@@ -45,6 +52,8 @@ fn decode(bytes: &[u8]) -> Result<MapData, String> {
         .checked_add(cells_length)
         .and_then(|offset| offset.checked_add(borders_length))
         .and_then(|offset| offset.checked_add(anchors_length))
+        .and_then(|offset| offset.checked_add(distances_length))
+        .and_then(|offset| offset.checked_add(adjacency_length))
         .ok_or("world map asset length overflow")?;
     if bytes.len() != end {
         return Err("world map asset has an invalid total length".to_owned());
@@ -74,13 +83,29 @@ fn decode(bytes: &[u8]) -> Result<MapData, String> {
             Ok((x, y))
         })
         .collect::<Result<Vec<_>, String>>()?;
-    Ok(MapData::new(
-        width,
-        height,
-        country_count,
-        cells,
-        borders,
-        anchors,
+    let distance_start = anchor_start + anchors_length;
+    let distances_km = (0..matrix_entries)
+        .map(|index| read_u16(bytes, distance_start + index * 2))
+        .collect::<Result<Vec<_>, _>>()?;
+    let adjacency_start = distance_start + distances_length;
+    let adjacency = bytes[adjacency_start..adjacency_start + adjacency_length]
+        .iter()
+        .map(|value| match value {
+            0 => Ok(false),
+            1 => Ok(true),
+            _ => Err("world map asset has an invalid adjacency value".to_owned()),
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let proximity = ProximityData::new(country_count, distances_km, adjacency)?;
+    let self_proximity = proximity
+        .between(0, 0)
+        .ok_or("world proximity self lookup is missing")?;
+    if self_proximity.distance_km != 0 || self_proximity.adjacent {
+        return Err("world proximity self lookup is invalid".to_owned());
+    }
+    Ok((
+        MapData::new(width, height, country_count, cells, borders, anchors),
+        proximity,
     ))
 }
 
@@ -110,28 +135,64 @@ mod tests {
 
     #[test]
     fn rejects_invalid_versions_lengths_and_identifiers() {
-        let original = include_bytes!("../../../assets/world-v1.bin");
+        let original = include_bytes!("../../../assets/world-v2.bin");
 
         let mut version = original.to_vec();
-        version[4] = 2;
+        version[4] = 1;
         assert!(decode(&version).is_err());
+
+        let mut future_version = original.to_vec();
+        future_version[4] = 3;
+        assert!(decode(&future_version).is_err());
 
         let mut length = original.to_vec();
         length[17] = 0;
         assert!(decode(&length).is_err());
 
         let mut identifier = original.to_vec();
-        identifier[32] = 250;
-        identifier[33] = 0;
+        identifier[36] = 250;
+        identifier[37] = 0;
         assert!(decode(&identifier).is_err());
+    }
+
+    #[test]
+    fn rejects_invalid_proximity_sections() {
+        let original = include_bytes!("../../../assets/world-v2.bin");
+        let cells_length =
+            u32::from_le_bytes(original[16..20].try_into().expect("cell length")) as usize;
+        let borders_length =
+            u32::from_le_bytes(original[20..24].try_into().expect("border length")) as usize;
+        let anchors_length =
+            u32::from_le_bytes(original[24..28].try_into().expect("anchor length")) as usize;
+        let distances_length =
+            u32::from_le_bytes(original[28..32].try_into().expect("distance length")) as usize;
+        let distance_start = super::HEADER_LENGTH + cells_length + borders_length + anchors_length;
+        let adjacency_start = distance_start + distances_length;
+
+        let mut length = original.to_vec();
+        length[28] = 0;
+        assert!(decode(&length).is_err());
+
+        let mut adjacency_value = original.to_vec();
+        adjacency_value[adjacency_start] = 2;
+        assert!(decode(&adjacency_value).is_err());
+
+        let mut asymmetric_distance = original.to_vec();
+        asymmetric_distance[distance_start + 2] = 1;
+        assert!(decode(&asymmetric_distance).is_err());
     }
     #[test]
     fn decodes_the_committed_asset() {
+        let (map_data, proximity) = super::decode(include_bytes!("../../../assets/world-v2.bin"))
+            .expect("asset should decode");
+        assert_eq!(map_data.dimensions(), (720, 300));
+        assert_eq!(map_data.country_count(), 196);
         assert_eq!(
-            super::decode_embedded()
-                .expect("asset should decode")
-                .dimensions(),
-            (720, 300)
+            proximity
+                .between(0, 0)
+                .expect("self is indexed")
+                .distance_km,
+            0
         );
     }
 }

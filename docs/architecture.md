@@ -52,7 +52,7 @@ worldhunt/
 |   |   |-- {z}_{x}_{y}.pbf.gz
 |   |   `-- anchors-v1.bin
 |   |-- map-details-v1.bin
-|   `-- world-v1.bin
+|   `-- world-v2.bin
 |-- data/
 |   |-- countries.toml
 |   `-- source/world-boundaries.json
@@ -169,16 +169,15 @@ state, but it never mutates the game or decides business rules.
 
 ### World Data
 
-`infrastructure/world_data` decodes the validated raster asset used by the data
-pipeline and reserved for future proximity sections. The active TUI map embeds
-an offline OSM basemap, versioned country-ID overlay tiles, anchors, and map
-details directly:
+`infrastructure/world_data` decodes the validated version-2 raster and
+proximity asset. The active TUI map embeds an offline OSM basemap, versioned
+country-ID overlay tiles, anchors, and map details directly:
 
 - `decoder` validates magic, version, lengths, identifier ranges, and section
   consistency before exposing data.
 - `catalog` implements the `CountryCatalog` port.
-- `proximity` implements the `CountryProximity` port over the precomputed
-  matrices.
+- `proximity` owns validated decoded matrices and private constant-time
+  row-major lookup. Iteration 005 will adapt it to the `CountryProximity` port.
 - `map_data` exposes raster cells, anchors, and border flags to the TUI
   renderer without making them part of the domain model.
 
