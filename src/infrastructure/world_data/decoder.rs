@@ -6,8 +6,8 @@ const HEADER_LENGTH: usize = 36;
 const WATER: u16 = u16::MAX;
 const NEUTRAL_LAND: u16 = u16::MAX - 1;
 
-pub fn decode_embedded() -> Result<MapData, String> {
-    decode(include_bytes!("../../../assets/world-v2.bin")).map(|(map_data, _)| map_data)
+pub(super) fn decode_embedded() -> Result<(MapData, ProximityData), String> {
+    decode(include_bytes!("../../../assets/world-v2.bin"))
 }
 
 fn decode(bytes: &[u8]) -> Result<(MapData, ProximityData), String> {
