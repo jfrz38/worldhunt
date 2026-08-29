@@ -1,8 +1,8 @@
 # Iteration 004: Distance Calculation
 
-Status: In Progress
+Status: Completed
 Started: 2026-08-28
-Completed:
+Completed: 2026-08-30
 
 ## Goal
 
@@ -75,9 +75,9 @@ second adds asset sections, decoding, and the infrastructure lookup.
 - `cargo run --release -p world-data -- generate`: generated `world-v2.bin`.
 - `cargo run --release -p world-data -- generate --check`: passed on
   2026-08-28; the generated asset is current.
-- `make ci`: formatting, Clippy, tests, catalog validation, and deterministic
-  generation passed. Its final workspace build is pending because Windows
-  denied removal of an already-open `target/debug/worldhunt.exe`.
+- `make ci`: formatting, Clippy, tests, catalog validation, deterministic
+  generation, and the final workspace build passed on Windows on 2026-08-30
+  after merge into `develop`.
 
 ## Decisions
 
@@ -105,11 +105,10 @@ None yet.
 
 ## Outcome
 
-Both parts are implemented. The generated `world-v2.bin` is 764,068 bytes:
+Both parts are implemented and verified on `develop`. The generated `world-v2.bin` is 764,068 bytes:
 the 36-byte header is followed by the existing 648,784 bytes of sections,
 76,832 bytes of distances, and 38,416 bytes of adjacency data. It represents
 196 countries, 317 adjacent unordered pairs, and a maximum encoded distance of
 19,341 km. Generator and runtime tests cover v2 layout, malformed proximity
 sections, matrix invariants, France-Spain adjacency, United States-Russia
-proximity, and constant-time lookup. Formal completion remains pending merge
-and verification on `develop`.
+proximity, and constant-time lookup.
