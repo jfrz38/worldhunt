@@ -1,6 +1,8 @@
+mod layout;
 mod map;
 mod mvt;
 mod terminal;
+mod theme;
 
 #[cfg(test)]
 mod tests;
