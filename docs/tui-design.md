@@ -37,11 +37,11 @@ cases rather than assumed from terminal character dimensions.
 | --- | --- |
 | Printable text | Edit the country guess |
 | Backspace | Delete the previous input character |
-| Tab | Complete the first country suggestion |
+| Tab | Cycle through country suggestions |
 | `+` / `-` | Zoom in or out |
 | Mouse wheel | Zoom in or out |
 | Arrow keys | Pan the map |
-| Enter | Submit the current guess |
+| Enter | Complete the selected suggestion, or submit the current guess |
 | `/hint` + Enter | Reveal one more target-name letter without an attempt |
 | `/surrender` + Enter | Reveal the target and end the current game |
 | Esc | Quit |
@@ -52,9 +52,11 @@ Typing remains focused on the country field while a game is active. Letter keys
 remain available for country names, including `q`; arrow keys provide panning
 and `q` is not a global quit key.
 
-After two normalized characters, the guess field shows up to five canonical
-country names whose canonical name or alias starts with that prefix. `Tab`
-completes the first suggestion; `Enter` still submits the exact current text.
+After two normalized characters, the guess field shows up to five matching
+country names, separated by `|`. An alias that matches the prefix is shown and
+completed in preference to a longer canonical name for the same country. `Tab`
+cycles the selection, which is shown with inverse video. `Enter` completes the
+selection; a subsequent `Enter` submits the exact current text.
 Recoverable messages take precedence over suggestions.
 
 ## Map States

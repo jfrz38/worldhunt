@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use serde::Deserialize;
 use unicode_normalization::{UnicodeNormalization, char::is_combining_mark};
 
-use crate::domain::{CountryId, GuessInput, ports::CountryCatalog};
+use crate::domain::{
+    CountryId, GuessInput,
+    ports::{CountryCatalog, CountrySuggestion},
+};
 
 const EXPECTED_COUNTRY_COUNT: usize = 196;
 
@@ -23,7 +26,7 @@ pub(super) struct RuntimeCountryCatalog {
     playable: Vec<CountryId>,
     canonical_names: Vec<String>,
     names: HashMap<String, CountryId>,
-    search_names: Vec<(String, CountryId, bool)>,
+    search_names: Vec<(String, String, CountryId, bool)>,
 }
 
 impl RuntimeCountryCatalog {
@@ -49,7 +52,7 @@ impl RuntimeCountryCatalog {
                 if normalized.is_empty() {
                     return Err("embedded country catalog has ambiguous names".to_owned());
                 }
-                search_names.push((normalized.clone(), id, canonical));
+                search_names.push((normalized.clone(), name, id, canonical));
                 if let Some(previous) = names.insert(normalized, id)
                     && previous != id
                 {
@@ -86,8 +89,8 @@ impl CountryCatalog for RuntimeCountryCatalog {
         let mut matches = self
             .search_names
             .iter()
-            .filter(|(name, _, _)| name.starts_with(&query))
-            .map(|(_, country, canonical)| (*country, *canonical))
+            .filter(|(name, _, _, _)| name.starts_with(&query))
+            .map(|(_, _, country, canonical)| (*country, *canonical))
             .collect::<Vec<_>>();
         matches.sort_unstable_by(|(left, left_canonical), (right, right_canonical)| {
             right_canonical
@@ -99,6 +102,33 @@ impl CountryCatalog for RuntimeCountryCatalog {
             .into_iter()
             .take(limit)
             .map(|(country, _)| country)
+            .collect()
+    }
+
+    fn suggestions(&self, input: &GuessInput, limit: usize) -> Vec<CountrySuggestion> {
+        let query = normalize_name(input.as_str());
+        self.search(input, limit)
+            .into_iter()
+            .filter_map(|country| {
+                self.search_names
+                    .iter()
+                    .filter(|(normalized, _, matched_country, _)| {
+                        *matched_country == country && normalized.starts_with(&query)
+                    })
+                    .min_by(
+                        |(_, left, _, left_canonical), (_, right, _, right_canonical)| {
+                            left.chars()
+                                .count()
+                                .cmp(&right.chars().count())
+                                .then_with(|| right_canonical.cmp(left_canonical))
+                                .then_with(|| left.cmp(right))
+                        },
+                    )
+                    .map(|(_, completion, _, _)| CountrySuggestion {
+                        country,
+                        completion: completion.clone(),
+                    })
+            })
             .collect()
     }
 
@@ -165,5 +195,17 @@ mod tests {
                 .any(|country| catalog.name(*country) == Some("Spain"))
         );
         assert!(catalog.search(&GuessInput::new("s"), 5).is_empty());
+    }
+
+    #[test]
+    fn suggests_the_shortest_matching_alias_for_moldova() {
+        let catalog = RuntimeCountryCatalog::load(196).expect("embedded catalog is valid");
+
+        assert!(
+            catalog
+                .suggestions(&GuessInput::new("Mo"), 5)
+                .iter()
+                .any(|suggestion| suggestion.completion == "Moldova")
+        );
     }
 }

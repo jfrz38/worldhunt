@@ -32,6 +32,7 @@ pub(super) struct TuiApp<'a, Catalog, ProximityPort, Selector> {
     game: Game,
     input: String,
     message: Option<String>,
+    selected_suggestion: Option<usize>,
     hint_count: usize,
     surrendered: bool,
     should_quit: bool,
@@ -58,6 +59,7 @@ where
             game,
             input: String::new(),
             message: None,
+            selected_suggestion: None,
             hint_count: 0,
             surrendered: false,
             should_quit: false,
@@ -146,16 +148,31 @@ where
             return;
         }
         if action == InputAction::Complete {
-            if let Some(country) = self.suggestions().first().copied()
-                && let Some(name) = self.catalog.name(country)
-            {
-                self.input = name.to_owned();
+            let suggestion_count = self.suggestions().len();
+            if suggestion_count > 0 {
+                self.selected_suggestion = Some(
+                    self.selected_suggestion
+                        .map(|index| (index + 1) % suggestion_count)
+                        .unwrap_or(0),
+                );
                 self.message = None;
             }
-        } else if !input::apply(&mut self.input, action) {
-            self.submit(map);
-        } else {
+        } else if action == InputAction::Submit {
+            if let Some(suggestion) = self
+                .selected_suggestion
+                .take()
+                .and_then(|index| self.suggestions().into_iter().nth(index))
+            {
+                self.input = suggestion.completion;
+                self.message = None;
+            } else {
+                self.submit(map);
+            }
+        } else if input::apply(&mut self.input, action) {
+            self.selected_suggestion = None;
             self.message = None;
+        } else {
+            self.submit(map);
         }
     }
 
@@ -218,6 +235,7 @@ where
                 self.game = game;
                 self.input.clear();
                 self.message = None;
+                self.selected_suggestion = None;
                 self.hint_count = 0;
                 self.surrendered = false;
             }
@@ -260,24 +278,36 @@ where
             " Guess a country "
         };
         let content = if self.game_is_finished() {
-            format!(
+            Line::from(format!(
                 "Target: {}   N: new game   Esc: quit",
                 self.country_name(self.game.target())
-            )
+            ))
         } else {
             let input_width = usize::from(area.width.saturating_sub(2));
             let suggestion_width = input_width
                 .saturating_sub(self.input.chars().count())
-                .saturating_sub(2);
+                .saturating_sub(8);
             let suggestions = if self.message.is_none() {
-                self.suggestion_text(suggestion_width as u16)
+                self.visible_suggestions(suggestion_width as u16)
             } else {
-                String::new()
+                Vec::new()
             };
             if suggestions.is_empty() {
-                self.input.clone()
+                Line::from(self.input.clone())
             } else {
-                format!("{}  {suggestions}", self.input)
+                let mut spans = vec![Span::raw(self.input.clone()), Span::raw(" | Tab: ")];
+                for (index, suggestion) in suggestions.iter().enumerate() {
+                    if index > 0 {
+                        spans.push(Span::raw(" | "));
+                    }
+                    let style = (self.selected_suggestion.is_some() && index == 0)
+                        .then(|| Style::default().add_modifier(Modifier::REVERSED));
+                    spans.push(Span::styled(
+                        suggestion.completion.clone(),
+                        style.unwrap_or_default(),
+                    ));
+                }
+                Line::from(spans)
             }
         };
         frame.render_widget(
@@ -291,7 +321,13 @@ where
             .message
             .as_deref()
             .map(str::to_owned)
-            .unwrap_or_else(|| "Enter: submit   Arrows: pan   +/-: zoom   Esc: quit".to_owned());
+            .unwrap_or_else(|| {
+                if self.selected_suggestion.is_some() {
+                    "Enter: complete selection   Tab: next option   Esc: quit".to_owned()
+                } else {
+                    "Enter: submit   Arrows: pan   +/-: zoom   Esc: quit".to_owned()
+                }
+            });
         frame.render_widget(
             Paragraph::new(Span::styled(
                 &message,
@@ -307,26 +343,30 @@ where
         self.catalog.name(country).unwrap_or("Unknown country")
     }
 
-    fn suggestions(&self) -> Vec<CountryId> {
-        self.catalog.search(&GuessInput::new(&self.input), 5)
+    fn suggestions(&self) -> Vec<crate::domain::ports::CountrySuggestion> {
+        self.catalog.suggestions(&GuessInput::new(&self.input), 5)
     }
 
-    fn suggestion_text(&self, width: u16) -> String {
-        let mut text = String::from("Tab: ");
-        for country in self.suggestions() {
-            let Some(name) = self.catalog.name(country) else {
-                continue;
-            };
-            let separator = if text.ends_with(' ') { "" } else { "  " };
-            if text.chars().count() + separator.chars().count() + name.chars().count()
+    fn visible_suggestions(&self, width: u16) -> Vec<crate::domain::ports::CountrySuggestion> {
+        let mut text_width = 0;
+        let mut visible = Vec::new();
+        let suggestions = self.suggestions();
+        let start = self
+            .selected_suggestion
+            .filter(|&index| index < suggestions.len())
+            .unwrap_or(0);
+        for offset in 0..suggestions.len() {
+            let suggestion = &suggestions[(start + offset) % suggestions.len()];
+            let separator_width = if visible.is_empty() { 0 } else { 3 };
+            if text_width + separator_width + suggestion.completion.chars().count()
                 > usize::from(width)
             {
                 break;
             }
-            text.push_str(separator);
-            text.push_str(name);
+            text_width += separator_width + suggestion.completion.chars().count();
+            visible.push(suggestion.clone());
         }
-        if text == "Tab: " { String::new() } else { text }
+        visible
     }
 
     fn game_is_finished(&self) -> bool {

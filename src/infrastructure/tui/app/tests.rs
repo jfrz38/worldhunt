@@ -32,6 +32,34 @@ impl CountryCatalog for Catalog {
             .collect()
     }
 
+    fn suggestions(
+        &self,
+        input: &GuessInput,
+        _: usize,
+    ) -> Vec<crate::domain::ports::CountrySuggestion> {
+        match input.as_str() {
+            "Sp" => vec![crate::domain::ports::CountrySuggestion {
+                country: CountryId::new(1),
+                completion: "Spain".to_owned(),
+            }],
+            "Mo" => vec![
+                crate::domain::ports::CountrySuggestion {
+                    country: CountryId::new(0),
+                    completion: "Moldova".to_owned(),
+                },
+                crate::domain::ports::CountrySuggestion {
+                    country: CountryId::new(1),
+                    completion: "Monaco".to_owned(),
+                },
+                crate::domain::ports::CountrySuggestion {
+                    country: CountryId::new(0),
+                    completion: "Mongolia".to_owned(),
+                },
+            ],
+            _ => Vec::new(),
+        }
+    }
+
     fn resolve(&self, input: &GuessInput) -> Option<CountryId> {
         match input.as_str() {
             "France" => Some(CountryId::new(0)),
@@ -81,7 +109,7 @@ fn accepted_guess_clears_the_input_and_is_shown_in_history() {
 }
 
 #[test]
-fn tab_completes_the_first_suggestion() {
+fn tab_selects_the_first_suggestion() {
     let mut selector = Selector(CountryId::new(0));
     let mut app = app(&mut selector);
     let mut map = Map::load().expect("embedded map is valid");
@@ -94,7 +122,8 @@ fn tab_completes_the_first_suggestion() {
     }
     app.handle(EventAction::Input(input::InputAction::Complete), &mut map);
 
-    assert_eq!(app.input, "Spain");
+    assert_eq!(app.input, "Sp");
+    assert_eq!(app.selected_suggestion, Some(0));
 }
 
 #[test]
@@ -116,6 +145,7 @@ fn tab_completion_clears_a_previous_recoverable_message() {
         );
     }
     app.handle(EventAction::Input(input::InputAction::Complete), &mut map);
+    app.handle(EventAction::Input(input::InputAction::Submit), &mut map);
 
     assert_eq!(app.input, "Spain");
     assert!(app.message.is_none());
@@ -141,8 +171,123 @@ fn render_shows_suggestions_next_to_the_input() {
 
     let input_row = terminal_row(&terminal, 24);
     let status_row = terminal_row(&terminal, 28);
-    assert!(input_row.contains("Sp  Tab: Spain"));
+    assert!(input_row.contains("Sp | Tab: Spain"));
     assert!(!status_row.contains("Tab:"));
+}
+
+#[test]
+fn tab_completes_the_matching_short_alias() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+
+    for character in "Mo".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut map,
+        );
+    }
+    app.handle(EventAction::Input(input::InputAction::Complete), &mut map);
+    app.handle(EventAction::Input(input::InputAction::Submit), &mut map);
+
+    assert_eq!(app.input, "Moldova");
+}
+
+#[test]
+fn tab_cycles_suggestions_and_enter_completes_the_selected_one() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+
+    for character in "Mo".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut map,
+        );
+    }
+    app.handle(EventAction::Input(input::InputAction::Complete), &mut map);
+    app.handle(EventAction::Input(input::InputAction::Complete), &mut map);
+    app.handle(EventAction::Input(input::InputAction::Submit), &mut map);
+
+    assert_eq!(app.input, "Monaco");
+    assert!(app.selected_suggestion.is_none());
+    assert!(app.game.guesses().is_empty());
+}
+
+#[test]
+fn selected_suggestion_uses_inverse_video() {
+    use ratatui::style::Modifier;
+
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let map = Map::load().expect("embedded map is valid");
+    let mut input_map = Map::load().expect("embedded map is valid");
+    let mut terminal = Terminal::new(TestBackend::new(100, 30)).expect("test terminal starts");
+
+    for character in "Mo".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut input_map,
+        );
+    }
+    app.handle(
+        EventAction::Input(input::InputAction::Complete),
+        &mut input_map,
+    );
+    terminal
+        .draw(|frame| app.render(frame, &map))
+        .expect("frame renders");
+
+    assert!(terminal_row(&terminal, 24).contains("Mo | Tab: Moldova | Monaco | Mongolia"));
+    assert!(
+        terminal.backend().buffer()[(11, 24)]
+            .style()
+            .add_modifier
+            .contains(Modifier::REVERSED)
+    );
+}
+
+#[test]
+fn selected_suggestion_remains_visible_when_the_list_is_truncated() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    app.input = "Mo".to_owned();
+    app.selected_suggestion = Some(2);
+
+    let suggestions = app.visible_suggestions(8);
+
+    assert_eq!(
+        suggestions
+            .iter()
+            .map(|suggestion| suggestion.completion.as_str())
+            .collect::<Vec<_>>(),
+        ["Mongolia"]
+    );
+}
+
+#[test]
+fn status_explains_that_enter_completes_a_selected_suggestion() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let map = Map::load().expect("embedded map is valid");
+    let mut input_map = Map::load().expect("embedded map is valid");
+    let mut terminal = Terminal::new(TestBackend::new(100, 30)).expect("test terminal starts");
+
+    for character in "Mo".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut input_map,
+        );
+    }
+    app.handle(
+        EventAction::Input(input::InputAction::Complete),
+        &mut input_map,
+    );
+    terminal
+        .draw(|frame| app.render(frame, &map))
+        .expect("frame renders");
+
+    assert!(terminal_row(&terminal, 27).contains("Enter: complete selection"));
 }
 
 #[test]

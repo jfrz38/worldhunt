@@ -9,7 +9,7 @@ pub use map_data::MapData;
 
 use crate::domain::{
     CountryId, GuessInput, Proximity,
-    ports::{CountryCatalog, CountryProximity},
+    ports::{CountryCatalog, CountryProximity, CountrySuggestion},
 };
 
 use self::{catalog::RuntimeCountryCatalog, proximity::ProximityData};
@@ -49,6 +49,14 @@ impl CountryCatalog for WorldData {
 
     fn name(&self, country: CountryId) -> Option<&str> {
         self.catalog.name(country)
+    }
+
+    fn search(&self, input: &GuessInput, limit: usize) -> Vec<CountryId> {
+        self.catalog.search(input, limit)
+    }
+
+    fn suggestions(&self, input: &GuessInput, limit: usize) -> Vec<CountrySuggestion> {
+        self.catalog.suggestions(input, limit)
     }
 
     fn resolve(&self, input: &GuessInput) -> Option<CountryId> {
@@ -94,6 +102,18 @@ mod tests {
         assert_eq!(
             world_data.between(crate::domain::CountryId::new(196), france),
             None
+        );
+        assert!(
+            world_data
+                .search(&GuessInput::new("Sp"), 5)
+                .iter()
+                .any(|country| world_data.name(*country) == Some("Spain"))
+        );
+        assert!(
+            world_data
+                .suggestions(&GuessInput::new("Mo"), 5)
+                .iter()
+                .any(|suggestion| suggestion.completion == "Moldova")
         );
     }
 }
