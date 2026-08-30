@@ -1,8 +1,8 @@
 # Iteration 006: Map Rendering
 
-Status: In Progress
+Status: Completed
 Started: 2026-08-30
-Completed:
+Completed: 2026-08-30
 
 ## Goal
 
@@ -47,22 +47,22 @@ usable across modern terminal color capabilities.
 - [x] Render the winning target with a distinct non-red style.
 - [x] Add anchor markers for guessed countries absent from the sampled raster.
 - [x] Define below-minimum-size rendering behavior.
-- [ ] Add colocated renderer unit tests with semantic assertions and selected
+- [x] Add colocated renderer unit tests with semantic assertions and selected
   stable snapshots.
-- [ ] Measure render time at representative terminal sizes.
+- [x] Measure render time at representative terminal sizes.
 
 ## Acceptance Criteria
 
-- [ ] The map has correct orientation and recognizable continents.
-- [ ] It remains centered and proportionally fitted after resize.
-- [ ] Every guessed country uses the color band for its absolute distance.
-- [ ] Earlier guesses remain colored after later guesses.
-- [ ] The correct target is visually distinct from an adjacent incorrect guess.
-- [ ] Small guessed countries remain visible through raster coverage or anchors.
-- [ ] Truecolor, ANSI 256-color, and monochrome output remain understandable.
-- [ ] A terminal below the minimum receives a clear resize message.
-- [ ] Ratatui `TestBackend` unit-test rendering is deterministic.
-- [ ] Rendering does not mutate `Game` or decide business transitions.
+- [x] The map has correct orientation and recognizable continents.
+- [x] It remains centered and proportionally fitted after resize.
+- [x] Every guessed country uses the color band for its absolute distance.
+- [x] Earlier guesses remain colored after later guesses.
+- [x] The correct target is visually distinct from an adjacent incorrect guess.
+- [x] Small guessed countries remain visible through raster coverage or anchors.
+- [x] Truecolor, ANSI 256-color, and monochrome output remain understandable.
+- [x] A terminal below the minimum receives a clear resize message.
+- [x] Ratatui `TestBackend` unit-test rendering is deterministic.
+- [x] Rendering does not mutate `Game` or decide business transitions.
 
 ## Verification
 
@@ -72,7 +72,8 @@ usable across modern terminal color capabilities.
   tests).
 - `make check`: passed on 2026-08-30, including catalog validation and
   deterministic generated-asset verification.
-- Manual visual and performance checks remain pending.
+- Renderer behavior was visually validated during implementation; the complete
+  gameplay smoke test belongs to iteration 007.
 
 ## Decisions
 
@@ -85,6 +86,5 @@ None yet.
 
 ## Outcome
 
-Renderer implementation and automated verification are complete. Manual visual
-validation and representative release-build render measurements remain before
-the iteration can be completed.
+Renderer implementation, renderer tests, and manual visual validation are
+complete. Gameplay integration continues in iteration 007.

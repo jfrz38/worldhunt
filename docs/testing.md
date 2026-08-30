@@ -190,7 +190,8 @@ make check
 
 `make test` runs all unit tests and the automated smoke target. `cargo test
 --test smoke` may be used during development to run only smoke scenarios. The
-smoke target is added when its first automated scenario exists.
+smoke target renders the initial frame with production wiring and the embedded
+asset without requiring a real TTY.
 `make check` also runs `cargo run -p world-data -- validate`, which validates
 the committed catalog and source snapshot. Asset generation and its `--check`
 mode are added in iteration 003.

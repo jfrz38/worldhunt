@@ -1,7 +1,7 @@
 # Iteration 007: Playable TUI
 
-Status: Planned  
-Started:  
+Status: In Progress
+Started: 2026-08-30
 Completed:
 
 ## Goal
@@ -32,26 +32,26 @@ Integrate the game and map into the complete keyboard-driven MVP experience.
 
 ## Tasks
 
-- [ ] Compose `StartGame`, `SubmitGuess`, and concrete world-data and random
+- [x] Compose `StartGame`, `SubmitGuess`, and concrete world-data and random
   implementations in `main.rs`.
-- [ ] Implement `TuiApp` in `infrastructure/tui/app.rs` with presentation state,
+- [x] Implement `TuiApp` in `infrastructure/tui/app.rs` with presentation state,
   event handling, and calls to the application use cases.
-- [ ] Keep editable key handling in `infrastructure/tui/input.rs` and country
+- [x] Keep editable key handling in `infrastructure/tui/input.rs` and country
   normalization or alias resolution behind `CountryCatalog`.
-- [ ] Implement printable text input and Unicode-safe backspace behavior.
-- [ ] Submit guesses on `Enter` and clear input after accepted guesses.
-- [ ] Display unknown, empty, and duplicate input as non-fatal messages.
-- [ ] Implement wide map-plus-history layout.
-- [ ] Implement narrow stacked layout.
-- [ ] Keep recent attempts visible when the history exceeds its viewport.
-- [ ] Show kilometers and `Borders target` consistently.
-- [ ] Display target name and attempt count after victory.
-- [ ] Enable `N` for a new game only in the post-win state.
-- [ ] Preserve game and input state across resize events.
-- [ ] Ensure `Esc` and `Ctrl+C` work from every state.
-- [ ] Add unit tests for event-to-action mapping and TUI presentation-state
+- [x] Implement printable text input and Unicode-safe backspace behavior.
+- [x] Submit guesses on `Enter` and clear input after accepted guesses.
+- [x] Display unknown, empty, and duplicate input as non-fatal messages.
+- [x] Implement wide map-plus-history layout.
+- [x] Implement narrow stacked layout.
+- [x] Keep recent attempts visible when the history exceeds its viewport.
+- [x] Show kilometers and `Borders target` consistently.
+- [x] Display target name and attempt count after victory.
+- [x] Enable `N` for a new game only in the post-win state.
+- [x] Preserve game and input state across resize events.
+- [x] Ensure `Esc` and `Ctrl+C` work from every state.
+- [x] Add unit tests for event-to-action mapping and TUI presentation-state
   transitions, using fake domain ports where isolation is needed.
-- [ ] Add the first automated smoke target for startup with the embedded asset
+- [x] Add the first automated smoke target for startup with the embedded asset
   and initial-frame rendering when it can run reliably without a real TTY.
 - [ ] Perform a complete manual game smoke test.
 
@@ -72,7 +72,10 @@ Integrate the game and map into the complete keyboard-driven MVP experience.
 
 ## Verification
 
-Not run; iteration has not started.
+- `make check`: passed on 2026-08-30, including format, Clippy with warnings
+  denied, 91 unit and smoke tests, catalog validation, and deterministic asset
+  verification.
+- Manual interactive and visual smoke test: pending in a real terminal.
 
 ## Decisions
 

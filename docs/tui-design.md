@@ -39,15 +39,15 @@ cases rather than assumed from terminal character dimensions.
 | Backspace | Delete the previous input character |
 | `+` / `-` | Zoom in or out |
 | Mouse wheel | Zoom in or out |
-| Arrow keys / `hjkl` | Pan the map |
+| Arrow keys | Pan the map |
 | Enter | Submit the current guess |
 | Esc | Quit |
 | Ctrl+C | Quit |
 | N | Start a new game after winning |
 
-Typing remains focused on the country field while a game is active. A plain
-`q` must remain available as part of a country name and is not a global quit
-key.
+Typing remains focused on the country field while a game is active. Letter keys
+remain available for country names, including `q`; arrow keys provide panning
+and `q` is not a global quit key.
 
 ## Map States
 
