@@ -42,6 +42,8 @@ cases rather than assumed from terminal character dimensions.
 | Mouse wheel | Zoom in or out |
 | Arrow keys | Pan the map |
 | Enter | Submit the current guess |
+| `/hint` + Enter | Reveal one more target-name letter without an attempt |
+| `/surrender` + Enter | Reveal the target and end the current game |
 | Esc | Quit |
 | Ctrl+C | Quit |
 | N | Start a new game after winning |
@@ -50,9 +52,10 @@ Typing remains focused on the country field while a game is active. Letter keys
 remain available for country names, including `q`; arrow keys provide panning
 and `q` is not a global quit key.
 
-After two normalized characters, the input shows up to five canonical country
-names whose canonical name or alias starts with that prefix. `Tab` completes the
-first suggestion; `Enter` still submits the exact current text.
+After two normalized characters, the guess field shows up to five canonical
+country names whose canonical name or alias starts with that prefix. `Tab`
+completes the first suggestion; `Enter` still submits the exact current text.
+Recoverable messages take precedence over suggestions.
 
 ## Map States
 
@@ -123,5 +126,6 @@ Unknown and duplicate guesses produce concise, non-fatal messages near the
 input. Messages disappear or are replaced by the next relevant action.
 
 Victory clearly names the target and attempt count without obscuring the final
-map. The only post-win actions required by the MVP are starting a new game and
-quitting.
+map. `/hint` progressively reveals target-name letters without adding an
+attempt. `/surrender` reveals the target without recording a win. Both victory
+and surrender offer a new game and quitting.

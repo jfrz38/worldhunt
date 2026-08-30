@@ -16,8 +16,8 @@ network connection, and remain usable across Windows, Linux, and macOS.
 3. Reject unknown and repeated guesses without consuming an attempt.
 4. Show the guessed country on the map using a color derived from its distance.
 5. Add the guess and its distance to the attempt history.
-6. Repeat until the target is guessed.
-7. Reveal the target as the winning country and offer a new local game.
+6. Repeat until the target is guessed or the player surrenders.
+7. Reveal the target at the end of the game and offer a new local game.
 
 There is no attempt limit. A country that shares a border with the target is
 reported as `Borders target` instead of `0 km`.
@@ -32,7 +32,8 @@ reported as `Borders target` instead of `0 km`.
 - Persistent coloring of all guesses during the current game.
 - Minimum geodesic distance between country territories.
 - Exact distance in the attempt history, rounded to kilometers.
-- Keyboard input, error messages, win state, and new-game action.
+- Keyboard input, prefix suggestions, recoverable errors, hints, surrender, win
+  state, and new-game action.
 - Truecolor output when supported and an ANSI 256-color fallback.
 - A monochrome fallback when color is disabled.
 - Windows, Linux, and macOS support.
@@ -56,8 +57,13 @@ common punctuation variants, and diacritics where practical. Aliases are
 explicit data, not fuzzy matches. Examples include `USA`, `US`, and
 `United States of America` for `United States`.
 
-Fuzzy suggestions and localization are not part of the MVP. Invalid input
-must produce a recoverable message and preserve the current game.
+After two normalized characters, prefix suggestions show canonical country
+names. `Tab` completes the first suggestion; this is not fuzzy matching.
+Invalid input must produce a recoverable message and preserve the current game.
+
+`/hint` progressively reveals letters of the target's canonical name without
+adding an attempt. `/surrender` reveals the target, ends the current session
+without recording a win, and offers a new game.
 
 ## Out of Scope for the MVP
 
