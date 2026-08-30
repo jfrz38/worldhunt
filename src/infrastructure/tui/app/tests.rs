@@ -25,6 +25,13 @@ impl CountryCatalog for Catalog {
         }
     }
 
+    fn search(&self, input: &GuessInput, _: usize) -> Vec<CountryId> {
+        (input.as_str() == "Sp")
+            .then_some(CountryId::new(1))
+            .into_iter()
+            .collect()
+    }
+
     fn resolve(&self, input: &GuessInput) -> Option<CountryId> {
         match input.as_str() {
             "France" => Some(CountryId::new(0)),
@@ -71,6 +78,95 @@ fn accepted_guess_clears_the_input_and_is_shown_in_history() {
     assert!(app.input.is_empty());
     assert_eq!(app.game.guesses().len(), 1);
     assert!(app.message.is_none());
+}
+
+#[test]
+fn tab_completes_the_first_suggestion() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+
+    for character in "Sp".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut map,
+        );
+    }
+    app.handle(EventAction::Input(input::InputAction::Complete), &mut map);
+
+    assert_eq!(app.input, "Spain");
+}
+
+#[test]
+fn tab_completion_clears_a_previous_recoverable_message() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+
+    app.handle(
+        EventAction::Input(input::InputAction::Insert('X')),
+        &mut map,
+    );
+    app.handle(EventAction::Input(input::InputAction::Submit), &mut map);
+    app.handle(EventAction::Input(input::InputAction::Backspace), &mut map);
+    for character in "Sp".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut map,
+        );
+    }
+    app.handle(EventAction::Input(input::InputAction::Complete), &mut map);
+
+    assert_eq!(app.input, "Spain");
+    assert!(app.message.is_none());
+}
+
+#[test]
+fn render_shows_the_first_suggestion_when_it_fits() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let map = Map::load().expect("embedded map is valid");
+    let mut input_map = Map::load().expect("embedded map is valid");
+    let mut terminal = Terminal::new(TestBackend::new(100, 30)).expect("test terminal starts");
+
+    for character in "Sp".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut input_map,
+        );
+    }
+    terminal
+        .draw(|frame| app.render(frame, &map))
+        .expect("frame renders");
+
+    let content = terminal
+        .backend()
+        .buffer()
+        .content()
+        .iter()
+        .map(|cell| cell.symbol())
+        .collect::<String>();
+    assert!(content.contains("Tab: Spain"));
+}
+
+#[test]
+fn accepted_guess_centers_the_map_without_changing_its_zoom() {
+    let mut selector = Selector(CountryId::new(1));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+    let (center_x, center_y, zoom) = map.camera();
+
+    for character in "France".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut map,
+        );
+    }
+    app.handle(EventAction::Input(input::InputAction::Submit), &mut map);
+
+    let (new_center_x, new_center_y, new_zoom) = map.camera();
+    assert_eq!(new_zoom, zoom);
+    assert_ne!((new_center_x, new_center_y), (center_x, center_y));
 }
 
 #[test]

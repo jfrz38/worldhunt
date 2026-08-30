@@ -2,7 +2,7 @@ use crate::{source::Feature, validation::ValidatedWorldData};
 use std::{collections::HashSet, fs, path::Path};
 
 const MAGIC: [u8; 4] = *b"WHDL";
-const VERSION: u16 = 1;
+const VERSION: u16 = 2;
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 struct Point {
@@ -45,6 +45,12 @@ pub(crate) fn generate_asset(
 
 fn encode(validated: &ValidatedWorldData) -> Result<Vec<u8>, String> {
     let spain = feature_for(validated, "ESP")?;
+    let spain_id = validated
+        .catalog
+        .countries
+        .iter()
+        .position(|country| country.iso3 == "ESP")
+        .ok_or("catalog has no Spain")?;
     let morocco = feature_for(validated, "MAR")?;
     let western_sahara = feature_for(validated, "ESH")?;
     let islands = outer_rings(spain)
@@ -64,6 +70,7 @@ fn encode(validated: &ValidatedWorldData) -> Result<Vec<u8>, String> {
     write_u16(&mut bytes, VERSION);
     write_u16(&mut bytes, islands.len() as u16);
     for island in islands {
+        write_u16(&mut bytes, spain_id as u16);
         write_points(&mut bytes, &island)?;
     }
     write_points(&mut bytes, &border)?;
@@ -181,4 +188,30 @@ fn write_points(bytes: &mut Vec<u8>, points: &[Point]) -> Result<(), String> {
 
 fn write_u16(bytes: &mut Vec<u8>, value: u16) {
     bytes.extend(value.to_le_bytes());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::encode;
+    use crate::validation::load_validated_repository;
+    use std::path::Path;
+
+    #[test]
+    fn encodes_canary_islands_with_spains_country_identifier() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .nth(2)
+            .expect("repository root exists");
+        let validated = load_validated_repository(root).expect("committed data is valid");
+        let spain = validated
+            .catalog
+            .countries
+            .iter()
+            .position(|country| country.iso3 == "ESP")
+            .expect("Spain is catalogued") as u16;
+        let bytes = encode(&validated).expect("details encode");
+
+        assert_eq!(&bytes[..8], b"WHDL\x02\0\x07\0");
+        assert_eq!(u16::from_le_bytes([bytes[8], bytes[9]]), spain);
+    }
 }

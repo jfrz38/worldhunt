@@ -21,3 +21,12 @@ fn enter_is_a_submission_without_editing_input() {
     assert_eq!(input, "France");
     assert_eq!(action_for(KeyCode::Enter), Some(InputAction::Submit));
 }
+
+#[test]
+fn tab_is_a_completion_without_editing_input() {
+    let mut input = String::from("Sp");
+
+    assert!(!apply(&mut input, InputAction::Complete));
+    assert_eq!(input, "Sp");
+    assert_eq!(action_for(KeyCode::Tab), Some(InputAction::Complete));
+}

@@ -77,7 +77,7 @@ where
                 }
             }
             EventAction::Pan(horizontal, vertical) => map.pan(horizontal, vertical),
-            EventAction::Input(action) => self.handle_input(action),
+            EventAction::Input(action) => self.handle_input(action, map),
             EventAction::Redraw | EventAction::Wait => {}
         }
     }
@@ -98,7 +98,7 @@ where
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Min(8),
-                Constraint::Length(3),
+                Constraint::Length(4),
                 Constraint::Length(3),
             ])
             .split(area);
@@ -133,29 +133,38 @@ where
         self.render_message(frame, sections[2]);
     }
 
-    fn handle_input(&mut self, action: InputAction) {
+    fn handle_input(&mut self, action: InputAction, map: &mut Map) {
         if matches!(action, InputAction::Insert('n' | 'N')) && self.game.status() == GameStatus::Won
         {
             self.start_new_game();
             return;
         }
-        if !input::apply(&mut self.input, action) {
-            self.submit();
+        if action == InputAction::Complete {
+            if let Some(country) = self.suggestions().first().copied()
+                && let Some(name) = self.catalog.name(country)
+            {
+                self.input = name.to_owned();
+                self.message = None;
+            }
+        } else if !input::apply(&mut self.input, action) {
+            self.submit(map);
         } else {
             self.message = None;
         }
     }
 
-    fn submit(&mut self) {
+    fn submit(&mut self, map: &mut Map) {
         let outcome = SubmitGuess::new(self.catalog, self.proximity)
             .dispatch(&mut self.game, GuessInput::new(&self.input));
         self.message = match outcome {
-            SubmitGuessOutcome::Accepted(_) => {
+            SubmitGuessOutcome::Accepted(guess) => {
                 self.input.clear();
+                map.center_on(guess.country());
                 None
             }
-            SubmitGuessOutcome::Won(_) => {
+            SubmitGuessOutcome::Won(guess) => {
                 self.input.clear();
+                map.center_on(guess.country());
                 Some(format!(
                     "You found {} in {} attempts. Press N for a new game or Esc to quit.",
                     self.country_name(self.game.target()),
@@ -227,7 +236,12 @@ where
                 self.country_name(self.game.target())
             )
         } else {
-            self.input.clone()
+            let suggestions = self.suggestion_text(area.width.saturating_sub(2));
+            if suggestions.is_empty() {
+                self.input.clone()
+            } else {
+                format!("{}\nTab: {suggestions}", self.input)
+            }
         };
         frame.render_widget(
             Paragraph::new(content).block(Block::default().borders(Borders::ALL).title(title)),
@@ -253,6 +267,28 @@ where
 
     fn country_name(&self, country: CountryId) -> &str {
         self.catalog.name(country).unwrap_or("Unknown country")
+    }
+
+    fn suggestions(&self) -> Vec<CountryId> {
+        self.catalog.search(&GuessInput::new(&self.input), 5)
+    }
+
+    fn suggestion_text(&self, width: u16) -> String {
+        let mut text = String::from("Tab: ");
+        for country in self.suggestions() {
+            let Some(name) = self.catalog.name(country) else {
+                continue;
+            };
+            let separator = if text.ends_with(' ') { "" } else { "  " };
+            if text.chars().count() + separator.chars().count() + name.chars().count()
+                > usize::from(width)
+            {
+                break;
+            }
+            text.push_str(separator);
+            text.push_str(name);
+        }
+        if text == "Tab: " { String::new() } else { text }
     }
 }
 
