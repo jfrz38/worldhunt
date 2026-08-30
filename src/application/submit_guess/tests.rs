@@ -13,6 +13,9 @@ impl CountryCatalog for Catalog {
     fn playable(&self) -> &[CountryId] {
         &[]
     }
+    fn name(&self, _: CountryId) -> Option<&str> {
+        None
+    }
     fn resolve(&self, input: &GuessInput) -> Option<CountryId> {
         (input.as_str() == "France").then_some(CountryId::new(1))
     }

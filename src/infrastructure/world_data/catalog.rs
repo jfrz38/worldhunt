@@ -21,6 +21,7 @@ struct CatalogCountry {
 
 pub(super) struct RuntimeCountryCatalog {
     playable: Vec<CountryId>,
+    canonical_names: Vec<String>,
     names: HashMap<String, CountryId>,
 }
 
@@ -34,9 +35,11 @@ impl RuntimeCountryCatalog {
             return Err("embedded country catalog does not match world data".to_owned());
         }
 
+        let mut canonical_names = Vec::with_capacity(catalog.countries.len());
         let mut names = HashMap::new();
         for (index, country) in catalog.countries.into_iter().enumerate() {
             let id = CountryId::new(index as u16);
+            canonical_names.push(country.name.clone());
             for name in std::iter::once(country.name).chain(country.aliases) {
                 let normalized = normalize_name(&name);
                 if normalized.is_empty() {
@@ -51,6 +54,7 @@ impl RuntimeCountryCatalog {
         }
         Ok(Self {
             playable: (0..country_count).map(CountryId::new).collect(),
+            canonical_names,
             names,
         })
     }
@@ -59,6 +63,12 @@ impl RuntimeCountryCatalog {
 impl CountryCatalog for RuntimeCountryCatalog {
     fn playable(&self) -> &[CountryId] {
         &self.playable
+    }
+
+    fn name(&self, country: CountryId) -> Option<&str> {
+        self.canonical_names
+            .get(usize::from(country.value()))
+            .map(String::as_str)
     }
 
     fn resolve(&self, input: &GuessInput) -> Option<CountryId> {

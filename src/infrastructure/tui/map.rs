@@ -108,6 +108,7 @@ impl Map {
         self.center_y = (self.center_y + vertical * step).clamp(NORTH, SOUTH);
     }
 
+    #[cfg(test)]
     pub(super) fn render(&self, area: Rect, buffer: &mut Buffer) {
         let theme = Theme::from_environment();
         self.render_with_guesses(area, buffer, &[], theme);

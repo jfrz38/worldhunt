@@ -47,6 +47,10 @@ impl CountryCatalog for WorldData {
         self.catalog.playable()
     }
 
+    fn name(&self, country: CountryId) -> Option<&str> {
+        self.catalog.name(country)
+    }
+
     fn resolve(&self, input: &GuessInput) -> Option<CountryId> {
         self.catalog.resolve(input)
     }
