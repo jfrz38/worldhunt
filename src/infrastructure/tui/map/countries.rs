@@ -83,7 +83,10 @@ impl CountryOverlay {
         }
     }
 
-    #[allow(dead_code)]
+    pub(super) const fn country_count(&self) -> usize {
+        COUNTRY_COUNT
+    }
+
     pub(super) fn anchor(&self, country_id: u16) -> Option<(f64, f64)> {
         self.anchors.get(usize::from(country_id)).copied()
     }

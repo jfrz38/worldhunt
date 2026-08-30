@@ -1,10 +1,12 @@
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-    style::{Color, Style},
-};
+use ratatui::{buffer::Buffer, layout::Rect, style::Style};
 
-use super::mvt::{self, Tile};
+use crate::domain::Guess;
+
+use super::{
+    layout,
+    mvt::{self, Tile},
+    theme::Theme,
+};
 
 mod countries;
 use countries::CountryOverlay;
@@ -14,9 +16,7 @@ const WATER: u8 = 1;
 const BORDER: u8 = 2;
 const NORTH: f64 = 0.0307;
 const SOUTH: f64 = 0.6887;
-const LAND_COLOR: Color = Color::Rgb(93, 105, 112);
-const WATER_COLOR: Color = Color::Rgb(8, 24, 42);
-const BORDER_COLOR: Color = Color::Rgb(37, 48, 56);
+const NEUTRAL_LAND: u16 = u16::MAX - 1;
 const DETAIL_ZOOM: f64 = 0.5;
 const INITIAL_ZOOM: f64 = 1.0;
 const SPAIN_CENTER_X: f64 = 0.489_711_666_7;
@@ -47,6 +47,23 @@ pub(super) struct Map {
     zoom_one: [Tile; 4],
     countries: CountryOverlay,
     details: MapDetails,
+}
+
+/// Immutable presentation data derived from the domain's accepted guesses.
+pub(super) struct MapState {
+    country_styles: Vec<Option<Style>>,
+}
+
+impl MapState {
+    pub(super) fn from_guesses(guesses: &[Guess], country_count: usize, theme: Theme) -> Self {
+        let mut country_styles = vec![None; country_count];
+        for guess in guesses {
+            if let Some(style) = country_styles.get_mut(usize::from(guess.country().value())) {
+                *style = Some(theme.guessed_land(guess.clue()));
+            }
+        }
+        Self { country_styles }
+    }
 }
 
 impl Map {
@@ -92,21 +109,28 @@ impl Map {
     }
 
     pub(super) fn render(&self, area: Rect, buffer: &mut Buffer) {
-        self.render_with_country_colors(area, buffer, &[]);
+        let theme = Theme::from_environment();
+        self.render_with_guesses(area, buffer, &[], theme);
     }
 
-    /// Country IDs are catalog indexes; an absent color preserves neutral land.
-    pub(super) fn render_with_country_colors(
+    pub(super) fn render_with_guesses(
         &self,
         area: Rect,
         buffer: &mut Buffer,
-        country_colors: &[Color],
+        guesses: &[Guess],
+        theme: Theme,
     ) {
-        if area.width < 2 || area.height < 2 {
+        let state = MapState::from_guesses(guesses, self.countries.country_count(), theme);
+        self.render_with_state(area, buffer, &state, theme);
+    }
+
+    fn render_with_state(&self, area: Rect, buffer: &mut Buffer, state: &MapState, theme: Theme) {
+        let Some(map_area) = layout::map_area(area) else {
+            render_resize_message(area, buffer);
             return;
-        }
-        let columns = usize::from(area.width);
-        let rows = usize::from(area.height.saturating_sub(1));
+        };
+        let columns = usize::from(map_area.width);
+        let rows = usize::from(map_area.height);
         let dot_width = columns * 2;
         let dot_height = rows * 4;
         let mut dots = vec![0_u8; dot_width * dot_height];
@@ -145,15 +169,8 @@ impl Map {
                 scale,
             );
         }
-        render_dots(
-            &dots,
-            &countries,
-            country_colors,
-            dot_width,
-            area,
-            rows,
-            buffer,
-        );
+        render_dots(&dots, &countries, state, theme, dot_width, map_area, buffer);
+        self.render_anchors(&countries, state, theme, viewport, map_area, buffer);
         render_status(area, buffer, self.zoom);
     }
 
@@ -560,13 +577,13 @@ fn draw_line(
 fn render_dots(
     dots: &[u8],
     countries: &[u16],
-    country_colors: &[Color],
+    state: &MapState,
+    theme: Theme,
     dot_width: usize,
     area: Rect,
-    rows: usize,
     buffer: &mut Buffer,
 ) {
-    for row in 0..rows {
+    for row in 0..usize::from(area.height) {
         for column in 0..usize::from(area.width) {
             let mut mask = 0;
             let mut water = 0;
@@ -582,19 +599,62 @@ fn render_dots(
                 }
             }
             let foreground = if border > water {
-                BORDER_COLOR
+                theme.border()
             } else {
-                WATER_COLOR
+                theme.water()
             };
-            let land = country_colors
-                .get(usize::from(dominant_country(
-                    countries, dot_width, row, column,
-                )))
-                .copied()
-                .unwrap_or(LAND_COLOR);
+            let country = dominant_country(countries, dot_width, row, column);
+            let land = if country == NEUTRAL_LAND {
+                Style::default().bg(theme.neutral_land())
+            } else {
+                state
+                    .country_styles
+                    .get(usize::from(country))
+                    .and_then(|style| *style)
+                    .unwrap_or_else(|| Style::default().bg(theme.land()))
+            };
             buffer[(area.x + column as u16, area.y + row as u16)]
                 .set_symbol(&braille(mask))
-                .set_style(Style::default().fg(foreground).bg(land));
+                .set_style(Style::default().fg(foreground).patch(land));
+        }
+    }
+}
+
+impl Map {
+    fn render_anchors(
+        &self,
+        countries: &[u16],
+        state: &MapState,
+        theme: Theme,
+        viewport: Viewport,
+        area: Rect,
+        buffer: &mut Buffer,
+    ) {
+        for (country, style) in state.country_styles.iter().enumerate() {
+            let Some(style) = style else { continue };
+            let country = country as u16;
+            if countries.contains(&country) {
+                continue;
+            }
+            let Some((world_x, world_y)) = self.countries.anchor(country) else {
+                continue;
+            };
+            let horizontal = (world_x - viewport.center_x + 0.5).rem_euclid(1.0) - 0.5;
+            let dot_x = (viewport.width as f64 / 2.0 + horizontal * viewport.scale).round() as i32;
+            let dot_y = (viewport.height as f64 / 2.0
+                + (world_y - viewport.center_y) * viewport.scale)
+                .round() as i32;
+            if dot_x < 0 || dot_y < 0 {
+                continue;
+            }
+            let cell_x = dot_x as usize / 2;
+            let cell_y = dot_y as usize / 4;
+            if cell_x >= usize::from(area.width) || cell_y >= usize::from(area.height) {
+                continue;
+            }
+            buffer[(area.x + cell_x as u16, area.y + cell_y as u16)]
+                .set_symbol("•")
+                .set_style(Style::default().fg(theme.water()).patch(*style));
         }
     }
 }
@@ -625,7 +685,20 @@ fn render_status(area: Rect, buffer: &mut Buffer, zoom: f64) {
     for (index, character) in status.chars().take(usize::from(area.width)).enumerate() {
         buffer[(area.x + index as u16, area.y + area.height - 1)]
             .set_symbol(&character.to_string())
-            .set_style(Style::default().fg(Color::Gray).bg(Color::Black));
+            .set_style(
+                Style::default()
+                    .fg(ratatui::style::Color::Gray)
+                    .bg(ratatui::style::Color::Black),
+            );
+    }
+}
+
+fn render_resize_message(area: Rect, buffer: &mut Buffer) {
+    let message = "Resize terminal: minimum 20 columns x 8 rows";
+    for (index, character) in message.chars().take(usize::from(area.width)).enumerate() {
+        buffer[(area.x + index as u16, area.y + area.height / 2)]
+            .set_symbol(&character.to_string())
+            .set_style(Style::default());
     }
 }
 
@@ -642,9 +715,12 @@ fn braille(mask: u8) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        INITIAL_ZOOM, Map, NORTH, SOUTH, SPAIN_CENTER_X, SPAIN_CENTER_Y, dominant_country,
-        status_line, visible_rows,
+        INITIAL_ZOOM, Map, MapState, NORTH, SOUTH, SPAIN_CENTER_X, SPAIN_CENTER_Y,
+        dominant_country, status_line, visible_rows,
     };
+    use crate::domain::{CountryId, Game, Proximity};
+    use crate::infrastructure::tui::theme::{ColorMode, Theme};
+    use ratatui::{Terminal, backend::TestBackend, style::Color};
 
     #[test]
     fn loads_centered_on_spain_at_zoom_one() {
@@ -707,5 +783,69 @@ mod tests {
         let rings = [vec![(2, 3), (7, 3), (7, 8), (2, 8), (2, 3)]];
 
         assert_eq!(visible_rows(&rings, 10, 10), Some(3..9));
+    }
+
+    #[test]
+    fn renders_a_deterministic_game_state_with_test_backend() {
+        let map = Map::load().expect("map assets should load");
+        let mut game = Game::new(CountryId::new(0));
+        game.submit(CountryId::new(0), Proximity::new(0, false))
+            .expect("target guess is accepted");
+        let mut terminal = Terminal::new(TestBackend::new(80, 24)).expect("test terminal starts");
+        let theme = Theme::new(ColorMode::Ansi256);
+
+        terminal
+            .draw(|frame| {
+                map.render_with_guesses(frame.area(), frame.buffer_mut(), game.guesses(), theme)
+            })
+            .expect("first frame renders");
+        let first = terminal.backend().buffer().clone();
+        terminal
+            .draw(|frame| {
+                map.render_with_guesses(frame.area(), frame.buffer_mut(), game.guesses(), theme)
+            })
+            .expect("second frame renders");
+
+        assert_eq!(first, *terminal.backend().buffer());
+        assert!(first.content().iter().any(|cell| cell.symbol() != " "));
+        assert!(
+            first
+                .content()
+                .iter()
+                .any(|cell| cell.style().bg == Some(Color::Indexed(35)))
+        );
+    }
+
+    #[test]
+    fn displays_resize_message_below_minimum_size() {
+        let map = Map::load().expect("map assets should load");
+        let mut terminal = Terminal::new(TestBackend::new(19, 7)).expect("test terminal starts");
+
+        terminal
+            .draw(|frame| map.render(frame.area(), frame.buffer_mut()))
+            .expect("small frame renders");
+
+        let text = terminal
+            .backend()
+            .buffer()
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
+        assert!(text.contains("Resize terminal"));
+    }
+
+    #[test]
+    fn keeps_every_accepted_guess_in_the_presentation_state() {
+        let mut game = Game::new(CountryId::new(2));
+        game.submit(CountryId::new(0), Proximity::new(4_000, false))
+            .expect("first guess is accepted");
+        game.submit(CountryId::new(1), Proximity::new(500, false))
+            .expect("second guess is accepted");
+
+        let state = MapState::from_guesses(game.guesses(), 196, Theme::new(ColorMode::Ansi256));
+
+        assert!(state.country_styles[0].is_some());
+        assert!(state.country_styles[1].is_some());
     }
 }

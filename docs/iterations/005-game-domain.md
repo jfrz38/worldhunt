@@ -1,8 +1,8 @@
 # Iteration 005: Game Domain
 
-Status: In Progress
+Status: Completed
 Started: 2026-08-30
-Completed:
+Completed: 2026-08-30
 
 ## Goal
 
@@ -98,5 +98,4 @@ None yet.
 
 ## Outcome
 
-Implementation is complete on `feature/005-game-domain`; merge and final
-verification on `develop` are pending.
+Implemented, merged into `develop`, and verified before iteration 006 began.
