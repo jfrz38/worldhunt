@@ -7,6 +7,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
     application::{StartGame, SubmitGuess, SubmitGuessOutcome},
@@ -285,7 +286,7 @@ where
         } else {
             let input_width = usize::from(area.width.saturating_sub(2));
             let suggestion_width = input_width
-                .saturating_sub(self.input.chars().count())
+                .saturating_sub(display_width(&self.input))
                 .saturating_sub(8);
             let suggestions = if self.message.is_none() {
                 self.visible_suggestions(suggestion_width as u16)
@@ -296,11 +297,11 @@ where
                 Line::from(self.input.clone())
             } else {
                 let mut spans = vec![Span::raw(self.input.clone()), Span::raw(" | Tab: ")];
-                for (index, suggestion) in suggestions.iter().enumerate() {
-                    if index > 0 {
+                for (position, (index, suggestion)) in suggestions.iter().enumerate() {
+                    if position > 0 {
                         spans.push(Span::raw(" | "));
                     }
-                    let style = (self.selected_suggestion.is_some() && index == 0)
+                    let style = (self.selected_suggestion == Some(*index))
                         .then(|| Style::default().add_modifier(Modifier::REVERSED));
                     spans.push(Span::styled(
                         suggestion.completion.clone(),
@@ -347,24 +348,36 @@ where
         self.catalog.suggestions(&GuessInput::new(&self.input), 5)
     }
 
-    fn visible_suggestions(&self, width: u16) -> Vec<crate::domain::ports::CountrySuggestion> {
+    fn visible_suggestions(
+        &self,
+        width: u16,
+    ) -> Vec<(usize, crate::domain::ports::CountrySuggestion)> {
         let mut text_width = 0;
         let mut visible = Vec::new();
         let suggestions = self.suggestions();
-        let start = self
-            .selected_suggestion
-            .filter(|&index| index < suggestions.len())
-            .unwrap_or(0);
+        let all_fit = suggestions_width(&suggestions) <= usize::from(width);
+        let start = if all_fit {
+            0
+        } else {
+            self.selected_suggestion
+                .filter(|&index| index < suggestions.len())
+                .unwrap_or(0)
+        };
         for offset in 0..suggestions.len() {
-            let suggestion = &suggestions[(start + offset) % suggestions.len()];
+            let index = if all_fit {
+                offset
+            } else {
+                (start + offset) % suggestions.len()
+            };
+            let suggestion = &suggestions[index];
             let separator_width = if visible.is_empty() { 0 } else { 3 };
-            if text_width + separator_width + suggestion.completion.chars().count()
+            if text_width + separator_width + display_width(&suggestion.completion)
                 > usize::from(width)
             {
                 break;
             }
-            text_width += separator_width + suggestion.completion.chars().count();
-            visible.push(suggestion.clone());
+            text_width += separator_width + display_width(&suggestion.completion);
+            visible.push((index, suggestion.clone()));
         }
         visible
     }
@@ -389,6 +402,18 @@ where
             })
             .collect()
     }
+}
+
+fn display_width(text: &str) -> usize {
+    UnicodeWidthStr::width(text)
+}
+
+fn suggestions_width(suggestions: &[crate::domain::ports::CountrySuggestion]) -> usize {
+    suggestions
+        .iter()
+        .map(|suggestion| display_width(&suggestion.completion))
+        .sum::<usize>()
+        + suggestions.len().saturating_sub(1) * 3
 }
 
 #[cfg(test)]

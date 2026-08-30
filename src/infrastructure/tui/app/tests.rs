@@ -259,10 +259,50 @@ fn selected_suggestion_remains_visible_when_the_list_is_truncated() {
     assert_eq!(
         suggestions
             .iter()
-            .map(|suggestion| suggestion.completion.as_str())
+            .map(|(_, suggestion)| suggestion.completion.as_str())
             .collect::<Vec<_>>(),
         ["Mongolia"]
     );
+}
+
+#[test]
+fn keeps_the_selected_suggestion_in_its_original_position_when_all_fit() {
+    use ratatui::style::Modifier;
+
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let map = Map::load().expect("embedded map is valid");
+    let mut input_map = Map::load().expect("embedded map is valid");
+    let mut terminal = Terminal::new(TestBackend::new(100, 30)).expect("test terminal starts");
+
+    for character in "Mo".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut input_map,
+        );
+    }
+    for _ in 0..3 {
+        app.handle(
+            EventAction::Input(input::InputAction::Complete),
+            &mut input_map,
+        );
+    }
+    terminal
+        .draw(|frame| app.render(frame, &map))
+        .expect("frame renders");
+
+    assert!(terminal_row(&terminal, 24).contains("Mo | Tab: Moldova | Monaco | Mongolia"));
+    assert!(
+        terminal.backend().buffer()[(30, 24)]
+            .style()
+            .add_modifier
+            .contains(Modifier::REVERSED)
+    );
+}
+
+#[test]
+fn measures_terminal_display_width_instead_of_character_count() {
+    assert_eq!(super::display_width("A界"), 3);
 }
 
 #[test]

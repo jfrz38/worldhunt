@@ -57,6 +57,9 @@ country names, separated by `|`. An alias that matches the prefix is shown and
 completed in preference to a longer canonical name for the same country. `Tab`
 cycles the selection, which is shown with inverse video. `Enter` completes the
 selection; a subsequent `Enter` submits the exact current text.
+When every suggestion fits the field, their order remains fixed and only the
+selected item changes. On narrower terminals, the visible list rotates from
+the selected item so it is never hidden.
 Recoverable messages take precedence over suggestions.
 
 ## Map States
