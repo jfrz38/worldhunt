@@ -764,6 +764,9 @@ fn dominant_country(countries: &[u16], dot_width: usize, row: usize, column: usi
     for dot_y in 0..4 {
         for dot_x in 0..2 {
             let candidate = countries[(row * 4 + dot_y) * dot_width + column * 2 + dot_x];
+            if candidate == u16::MAX {
+                continue;
+            }
             let count = (0..4)
                 .flat_map(|other_y| (0..2).map(move |other_x| (other_y, other_x)))
                 .filter(|&(other_y, other_x)| {

@@ -122,7 +122,7 @@ fn tab_completion_clears_a_previous_recoverable_message() {
 }
 
 #[test]
-fn render_shows_the_first_suggestion_when_it_fits() {
+fn render_shows_suggestions_next_to_the_input() {
     let mut selector = Selector(CountryId::new(0));
     let mut app = app(&mut selector);
     let map = Map::load().expect("embedded map is valid");
@@ -139,6 +139,31 @@ fn render_shows_the_first_suggestion_when_it_fits() {
         .draw(|frame| app.render(frame, &map))
         .expect("frame renders");
 
+    let input_row = terminal_row(&terminal, 24);
+    let status_row = terminal_row(&terminal, 28);
+    assert!(input_row.contains("Sp  Tab: Spain"));
+    assert!(!status_row.contains("Tab:"));
+}
+
+#[test]
+fn render_prioritizes_recoverable_messages_over_suggestions() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let map = Map::load().expect("embedded map is valid");
+    let mut input_map = Map::load().expect("embedded map is valid");
+    let mut terminal = Terminal::new(TestBackend::new(100, 30)).expect("test terminal starts");
+
+    for character in "Sp".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut input_map,
+        );
+    }
+    app.message = Some("Unknown country.".to_owned());
+    terminal
+        .draw(|frame| app.render(frame, &map))
+        .expect("frame renders");
+
     let content = terminal
         .backend()
         .buffer()
@@ -146,7 +171,83 @@ fn render_shows_the_first_suggestion_when_it_fits() {
         .iter()
         .map(|cell| cell.symbol())
         .collect::<String>();
-    assert!(content.contains("Tab: Spain"));
+    assert!(content.contains("Unknown country."));
+    assert!(!content.contains("Tab: Spain"));
+}
+
+#[test]
+fn hint_reveals_one_more_target_letter_without_an_attempt() {
+    let mut selector = Selector(CountryId::new(1));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+
+    for character in "/hint".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut map,
+        );
+    }
+    app.handle(EventAction::Input(input::InputAction::Submit), &mut map);
+
+    assert_eq!(app.message.as_deref(), Some("Hint: S____"));
+    assert!(app.game.guesses().is_empty());
+}
+
+#[test]
+fn surrender_reveals_the_target_and_allows_a_new_game() {
+    let mut selector = Selector(CountryId::new(1));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+
+    for character in "/surrender".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut map,
+        );
+    }
+    app.handle(EventAction::Input(input::InputAction::Submit), &mut map);
+
+    assert!(app.surrendered);
+    assert!(
+        app.message
+            .as_deref()
+            .is_some_and(|message| message.contains("Spain"))
+    );
+    assert!(app.game.guesses().is_empty());
+
+    app.handle(
+        EventAction::Input(input::InputAction::Insert('n')),
+        &mut map,
+    );
+    assert!(!app.surrendered);
+    assert!(app.message.is_none());
+}
+
+#[test]
+fn status_keeps_a_surrender_message_visible_at_the_minimum_size() {
+    let mut selector = Selector(CountryId::new(1));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+    let mut terminal = Terminal::new(TestBackend::new(48, 20)).expect("test terminal starts");
+
+    for character in "/surrender".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut map,
+        );
+    }
+    app.handle(EventAction::Input(input::InputAction::Submit), &mut map);
+    terminal
+        .draw(|frame| app.render(frame, &map))
+        .expect("frame renders");
+
+    let status = format!(
+        "{}{}",
+        terminal_row(&terminal, 17),
+        terminal_row(&terminal, 18)
+    );
+    assert!(status.contains("Surrendered. The target was Spain."));
+    assert!(status.contains("Esc to quit."));
 }
 
 #[test]
@@ -278,4 +379,10 @@ fn too_small_frame_explains_how_to_recover() {
         .map(|cell| cell.symbol())
         .collect::<String>();
     assert!(content.contains("Resize terminal"));
+}
+
+fn terminal_row(terminal: &Terminal<TestBackend>, row: u16) -> String {
+    (0..terminal.backend().buffer().area().width)
+        .map(|column| terminal.backend().buffer()[(column, row)].symbol())
+        .collect()
 }

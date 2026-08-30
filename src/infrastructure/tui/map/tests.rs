@@ -40,6 +40,22 @@ fn identifies_only_countries_that_survive_braille_downsampling() {
 }
 
 #[test]
+fn preserves_a_country_sample_when_the_other_braille_dots_are_water() {
+    let countries = [
+        7,
+        u16::MAX,
+        u16::MAX,
+        u16::MAX,
+        u16::MAX,
+        u16::MAX,
+        u16::MAX,
+        u16::MAX,
+    ];
+
+    assert_eq!(dominant_country(&countries, 2, 0, 0), 7);
+}
+
+#[test]
 fn geographic_details_preserve_their_country_identity() {
     let mut countries = vec![u16::MAX; 16];
     let polygon = [(-2.0, -2.0), (2.0, -2.0), (2.0, 2.0), (-2.0, 2.0)];
@@ -71,6 +87,9 @@ fn canary_details_rasterize_with_spains_country_identity() {
     );
 
     assert!(countries.contains(&spain));
+    assert!((0..25).any(|row| {
+        (0..100).any(|column| dominant_country(&countries, 200, row, column) == spain)
+    }));
 }
 
 #[test]

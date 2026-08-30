@@ -32,6 +32,8 @@ pub(super) struct TuiApp<'a, Catalog, ProximityPort, Selector> {
     game: Game,
     input: String,
     message: Option<String>,
+    hint_count: usize,
+    surrendered: bool,
     should_quit: bool,
 }
 
@@ -56,6 +58,8 @@ where
             game,
             input: String::new(),
             message: None,
+            hint_count: 0,
+            surrendered: false,
             should_quit: false,
         })
     }
@@ -98,8 +102,8 @@ where
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Min(8),
-                Constraint::Length(4),
                 Constraint::Length(3),
+                Constraint::Length(4),
             ])
             .split(area);
         let content = if area.width >= 90 {
@@ -134,9 +138,11 @@ where
     }
 
     fn handle_input(&mut self, action: InputAction, map: &mut Map) {
-        if matches!(action, InputAction::Insert('n' | 'N')) && self.game.status() == GameStatus::Won
-        {
+        if matches!(action, InputAction::Insert('n' | 'N')) && self.game_is_finished() {
             self.start_new_game();
+            return;
+        }
+        if self.game_is_finished() {
             return;
         }
         if action == InputAction::Complete {
@@ -154,6 +160,25 @@ where
     }
 
     fn submit(&mut self, map: &mut Map) {
+        match self.input.trim().to_ascii_lowercase().as_str() {
+            "/surrender" => {
+                self.surrendered = true;
+                self.input.clear();
+                map.center_on(self.game.target());
+                self.message = Some(format!(
+                    "Surrendered. The target was {}. Press N for a new game or Esc to quit.",
+                    self.country_name(self.game.target())
+                ));
+                return;
+            }
+            "/hint" => {
+                self.hint_count += 1;
+                self.input.clear();
+                self.message = Some(format!("Hint: {}", self.hint_text()));
+                return;
+            }
+            _ => {}
+        }
         let outcome = SubmitGuess::new(self.catalog, self.proximity)
             .dispatch(&mut self.game, GuessInput::new(&self.input));
         self.message = match outcome {
@@ -193,6 +218,8 @@ where
                 self.game = game;
                 self.input.clear();
                 self.message = None;
+                self.hint_count = 0;
+                self.surrendered = false;
             }
             Err(error) => self.message = Some(format!("Cannot start a new game: {error:?}")),
         }
@@ -227,20 +254,30 @@ where
     fn render_input(&self, frame: &mut Frame, area: Rect) {
         let title = if self.game.status() == GameStatus::Won {
             " Victory "
+        } else if self.surrendered {
+            " Surrendered "
         } else {
             " Guess a country "
         };
-        let content = if self.game.status() == GameStatus::Won {
+        let content = if self.game_is_finished() {
             format!(
                 "Target: {}   N: new game   Esc: quit",
                 self.country_name(self.game.target())
             )
         } else {
-            let suggestions = self.suggestion_text(area.width.saturating_sub(2));
+            let input_width = usize::from(area.width.saturating_sub(2));
+            let suggestion_width = input_width
+                .saturating_sub(self.input.chars().count())
+                .saturating_sub(2);
+            let suggestions = if self.message.is_none() {
+                self.suggestion_text(suggestion_width as u16)
+            } else {
+                String::new()
+            };
             if suggestions.is_empty() {
                 self.input.clone()
             } else {
-                format!("{}\nTab: {suggestions}", self.input)
+                format!("{}  {suggestions}", self.input)
             }
         };
         frame.render_widget(
@@ -253,10 +290,11 @@ where
         let message = self
             .message
             .as_deref()
-            .unwrap_or("Enter: submit   Arrows: pan   +/-: zoom   Esc: quit");
+            .map(str::to_owned)
+            .unwrap_or_else(|| "Enter: submit   Arrows: pan   +/-: zoom   Esc: quit".to_owned());
         frame.render_widget(
             Paragraph::new(Span::styled(
-                message,
+                &message,
                 Style::default().add_modifier(Modifier::DIM),
             ))
             .block(Block::default().borders(Borders::ALL).title(" Status "))
@@ -289,6 +327,27 @@ where
             text.push_str(name);
         }
         if text == "Tab: " { String::new() } else { text }
+    }
+
+    fn game_is_finished(&self) -> bool {
+        self.game.status() == GameStatus::Won || self.surrendered
+    }
+
+    fn hint_text(&self) -> String {
+        let mut remaining = self.hint_count;
+        self.country_name(self.game.target())
+            .chars()
+            .map(|character| {
+                if !character.is_alphabetic() {
+                    character
+                } else if remaining == 0 {
+                    '_'
+                } else {
+                    remaining -= 1;
+                    character
+                }
+            })
+            .collect()
     }
 }
 
