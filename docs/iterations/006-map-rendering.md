@@ -82,7 +82,10 @@ usable across modern terminal color capabilities.
 
 ## Deviations
 
-None yet.
+- The initial fallback visibility check used raw Braille subpixels rather than
+  final cells, and the Canary detail layer did not retain country ownership.
+  Both renderer defects were corrected during the unfinished iteration 007
+  gameplay validation.
 
 ## Outcome
 

@@ -19,7 +19,9 @@ Integrate the game and map into the complete keyboard-driven MVP experience.
 - `TuiApp` presentation state and keyboard action handling in infrastructure.
 - Composition of use cases and concrete port implementations in `main.rs`.
 - Editable country input.
+- Prefix country suggestions and `Tab` completion.
 - Guess submission and recoverable messages.
+- Center the map on each accepted guess without changing zoom.
 - Wide and narrow layouts.
 - Attempt history with distances and border clues.
 - Victory presentation, new game, and quit actions.
@@ -28,7 +30,6 @@ Integrate the game and map into the complete keyboard-driven MVP experience.
 ## Out of Scope
 
 - Persistence, statistics, daily mode, mouse input, and packaging.
-- Search suggestions and autocomplete popups.
 
 ## Tasks
 
@@ -39,6 +40,8 @@ Integrate the game and map into the complete keyboard-driven MVP experience.
 - [x] Keep editable key handling in `infrastructure/tui/input.rs` and country
   normalization or alias resolution behind `CountryCatalog`.
 - [x] Implement printable text input and Unicode-safe backspace behavior.
+- [x] Show up to five canonical prefix suggestions after two normalized input characters.
+- [x] Complete the first suggestion with `Tab` without changing `Enter` submission.
 - [x] Submit guesses on `Enter` and clear input after accepted guesses.
 - [x] Display unknown, empty, and duplicate input as non-fatal messages.
 - [x] Implement wide map-plus-history layout.
@@ -48,6 +51,9 @@ Integrate the game and map into the complete keyboard-driven MVP experience.
 - [x] Display target name and attempt count after victory.
 - [x] Enable `N` for a new game only in the post-win state.
 - [x] Preserve game and input state across resize events.
+- [x] Center accepted guesses on their visual anchors while preserving zoom.
+- [x] Render anchor fallbacks from final Braille-cell visibility.
+- [x] Preserve Spain's country identity for Canary Island detail geometry.
 - [x] Ensure `Esc` and `Ctrl+C` work from every state.
 - [x] Add unit tests for event-to-action mapping and TUI presentation-state
   transitions, using fake domain ports where isolation is needed.
@@ -79,11 +85,18 @@ Integrate the game and map into the complete keyboard-driven MVP experience.
 
 ## Decisions
 
-None yet.
+- Search suggestions were brought into scope after manual gameplay validation
+  showed that they are necessary for a practical country-entry flow. Suggestions
+  remain a bounded prefix search; they do not introduce fuzzy matching or
+  arrow-key selection.
+- Geographic detail polygons carry their owning country identifier so detached
+  components, including the Canary Islands, receive guess colors.
 
 ## Deviations
 
-None yet.
+- The initial map fallback considered a country visible when it occupied any
+  Braille subpixel. It now evaluates final cell ownership, avoiding camera-grid
+  dependent disappearance for small territories such as Palestine.
 
 ## Outcome
 

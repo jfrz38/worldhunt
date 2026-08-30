@@ -20,8 +20,10 @@ are maintained in [`docs/`](docs/README.md).
 make run
 ```
 
-The application enters the terminal's alternate screen. Enter country names and
-press `Enter` to submit them. Press `Esc` or `Ctrl+C` to exit, use `+`/`-` to
+The application enters the terminal's alternate screen. After two characters,
+matching country names appear and `Tab` completes the first option; press
+`Enter` to submit the current guess. Accepted guesses center the map on that
+country without changing zoom. Press `Esc` or `Ctrl+C` to exit, use `+`/`-` to
 zoom and arrows to pan; resizing redraws the offline map.
 
 ## Quality Checks

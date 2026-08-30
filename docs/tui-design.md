@@ -37,6 +37,7 @@ cases rather than assumed from terminal character dimensions.
 | --- | --- |
 | Printable text | Edit the country guess |
 | Backspace | Delete the previous input character |
+| Tab | Complete the first country suggestion |
 | `+` / `-` | Zoom in or out |
 | Mouse wheel | Zoom in or out |
 | Arrow keys | Pan the map |
@@ -48,6 +49,10 @@ cases rather than assumed from terminal character dimensions.
 Typing remains focused on the country field while a game is active. Letter keys
 remain available for country names, including `q`; arrow keys provide panning
 and `q` is not a global quit key.
+
+After two normalized characters, the input shows up to five canonical country
+names whose canonical name or alias starts with that prefix. `Tab` completes the
+first suggestion; `Enter` still submits the exact current text.
 
 ## Map States
 
@@ -97,6 +102,10 @@ The MVP starts centered on Spain. Zoom changes between the embedded zoom-zero
 and zoom-one vector tiles; longitude wraps while latitude remains clamped to
 the available source coverage. Resize redraws the current viewport without
 resetting navigation or game state.
+
+After an accepted guess, the map centers on that country's visual anchor while
+preserving the current zoom. Empty, unknown, and repeated inputs do not move the
+camera.
 
 ## Responsive Rendering
 
