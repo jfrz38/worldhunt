@@ -37,17 +37,30 @@ cases rather than assumed from terminal character dimensions.
 | --- | --- |
 | Printable text | Edit the country guess |
 | Backspace | Delete the previous input character |
+| Tab | Cycle through country suggestions |
 | `+` / `-` | Zoom in or out |
 | Mouse wheel | Zoom in or out |
-| Arrow keys / `hjkl` | Pan the map |
-| Enter | Submit the current guess |
+| Arrow keys | Pan the map |
+| Enter | Complete the selected suggestion, or submit the current guess |
+| `/hint` + Enter | Reveal one more target-name letter without an attempt |
+| `/surrender` + Enter | Reveal the target and end the current game |
 | Esc | Quit |
 | Ctrl+C | Quit |
 | N | Start a new game after winning |
 
-Typing remains focused on the country field while a game is active. A plain
-`q` must remain available as part of a country name and is not a global quit
-key.
+Typing remains focused on the country field while a game is active. Letter keys
+remain available for country names, including `q`; arrow keys provide panning
+and `q` is not a global quit key.
+
+After two normalized characters, the guess field shows up to five matching
+country names, separated by `|`. An alias that matches the prefix is shown and
+completed in preference to a longer canonical name for the same country. `Tab`
+cycles the selection, which is shown with inverse video. `Enter` completes the
+selection; a subsequent `Enter` submits the exact current text.
+When every suggestion fits the field, their order remains fixed and only the
+selected item changes. On narrower terminals, the visible list rotates from
+the selected item so it is never hidden.
+Recoverable messages take precedence over suggestions.
 
 ## Map States
 
@@ -98,6 +111,10 @@ and zoom-one vector tiles; longitude wraps while latitude remains clamped to
 the available source coverage. Resize redraws the current viewport without
 resetting navigation or game state.
 
+After an accepted guess, the map centers on that country's visual anchor while
+preserving the current zoom. Empty, unknown, and repeated inputs do not move the
+camera.
+
 ## Responsive Rendering
 
 The renderer samples the current Web Mercator viewport into the largest
@@ -114,5 +131,6 @@ Unknown and duplicate guesses produce concise, non-fatal messages near the
 input. Messages disappear or are replaced by the next relevant action.
 
 Victory clearly names the target and attempt count without obscuring the final
-map. The only post-win actions required by the MVP are starting a new game and
-quitting.
+map. `/hint` progressively reveals target-name letters without adding an
+attempt. `/surrender` reveals the target without recording a win. Both victory
+and surrender offer a new game and quitting.

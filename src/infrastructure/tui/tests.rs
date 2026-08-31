@@ -34,7 +34,7 @@ fn resize_requests_a_redraw() {
 fn plain_q_does_not_quit() {
     assert_eq!(
         event_action(key(KeyCode::Char('q'), KeyModifiers::NONE)),
-        EventAction::Wait
+        EventAction::Input(super::input::InputAction::Insert('q'))
     );
 }
 

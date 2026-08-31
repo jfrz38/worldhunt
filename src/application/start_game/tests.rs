@@ -11,6 +11,9 @@ impl CountryCatalog for Catalog {
     fn playable(&self) -> &[CountryId] {
         &self.0
     }
+    fn name(&self, _: CountryId) -> Option<&str> {
+        None
+    }
     fn resolve(&self, _: &GuessInput) -> Option<CountryId> {
         None
     }

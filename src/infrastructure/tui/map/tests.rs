@@ -1,6 +1,6 @@
 use super::{
     INITIAL_ZOOM, Map, MapState, NORTH, SOUTH, SPAIN_CENTER_X, SPAIN_CENTER_Y, dominant_country,
-    status_line, visible_rows,
+    fill_geographic_country, status_line, visible_countries, visible_rows,
 };
 use crate::domain::{CountryId, Game, Proximity};
 use crate::infrastructure::tui::theme::{ColorMode, Theme};
@@ -30,6 +30,69 @@ fn breaks_country_ties_by_stable_catalog_index() {
 }
 
 #[test]
+fn identifies_only_countries_that_survive_braille_downsampling() {
+    let countries = [1, 1, 1, 1, 1, 1, 1, 2];
+
+    assert_eq!(
+        visible_countries(&countries, 2, 1, 1, 3),
+        vec![false, true, false]
+    );
+}
+
+#[test]
+fn preserves_a_country_sample_when_the_other_braille_dots_are_water() {
+    let countries = [
+        7,
+        u16::MAX,
+        u16::MAX,
+        u16::MAX,
+        u16::MAX,
+        u16::MAX,
+        u16::MAX,
+        u16::MAX,
+    ];
+
+    assert_eq!(dominant_country(&countries, 2, 0, 0), 7);
+}
+
+#[test]
+fn geographic_details_preserve_their_country_identity() {
+    let mut countries = vec![u16::MAX; 16];
+    let polygon = [(-2.0, -2.0), (2.0, -2.0), (2.0, 2.0), (-2.0, 2.0)];
+
+    fill_geographic_country(&mut countries, 4, 4, &polygon, 7, 0.5, 0.5, 100.0);
+
+    assert!(countries.contains(&7));
+}
+
+#[test]
+fn canary_details_rasterize_with_spains_country_identity() {
+    let details =
+        super::MapDetails::decode(include_bytes!("../../../../assets/map-details-v1.bin"))
+            .expect("map details decode");
+    let spain = details.islands[0].country;
+    let mut dots = vec![0; 200 * 100];
+    let mut countries = vec![u16::MAX; 200 * 100];
+
+    details.draw(
+        &mut dots,
+        &mut countries,
+        super::Viewport {
+            width: 200,
+            height: 100,
+            center_x: 0.455,
+            center_y: 0.418,
+            scale: 10_000.0,
+        },
+    );
+
+    assert!(countries.contains(&spain));
+    assert!((0..25).any(|row| {
+        (0..100).any(|column| dominant_country(&countries, 200, row, column) == spain)
+    }));
+}
+
+#[test]
 fn navigation_clamps_latitude_wraps_longitude_and_bounds_zoom() {
     let mut map = Map::load().expect("map assets should load");
 
@@ -48,6 +111,16 @@ fn navigation_clamps_latitude_wraps_longitude_and_bounds_zoom() {
     assert_eq!(map.zoom, 0.0);
     map.pan(0.0, 100.0);
     assert_eq!(map.center_y, SOUTH);
+}
+
+#[test]
+fn centering_uses_an_anchor_without_changing_zoom() {
+    let mut map = Map::load().expect("map assets should load");
+    let zoom = map.zoom;
+
+    assert!(map.center_on(CountryId::new(0)));
+
+    assert_eq!(map.zoom, zoom);
 }
 
 #[test]

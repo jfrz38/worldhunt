@@ -20,9 +20,11 @@ are maintained in [`docs/`](docs/README.md).
 make run
 ```
 
-The application enters the terminal's alternate screen. Press `Esc` or
-`Ctrl+C` to exit. Use `+`/`-` to zoom and arrows or `hjkl` to pan; resizing
-redraws the offline map.
+The application enters the terminal's alternate screen. After two characters,
+matching country names appear and `Tab` completes the first option; press
+`Enter` to submit the current guess. Accepted guesses center the map on that
+country without changing zoom. Press `Esc` or `Ctrl+C` to exit, use `+`/`-` to
+zoom and arrows to pan; resizing redraws the offline map.
 
 ## Quality Checks
 
@@ -36,8 +38,9 @@ as the underlying tool when Make is unavailable.
 The crate follows the dependency direction `infrastructure -> application ->
 domain`; `src/main.rs` is only the composition root. Unit tests are colocated
 with their Rust modules, in separate `tests.rs` files declared with
-`#[cfg(test)] mod tests;`. The root `tests/smoke.rs` target is reserved until a
-production-wiring smoke scenario can be implemented.
+`#[cfg(test)] mod tests;`. The root `tests/smoke.rs` target verifies that
+production wiring decodes the embedded asset and renders an initial frame
+without a real TTY.
 
 ## Geographic Data
 

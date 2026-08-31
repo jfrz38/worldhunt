@@ -1,6 +1,6 @@
 use ratatui::{buffer::Buffer, layout::Rect, style::Style};
 
-use crate::domain::Guess;
+use crate::domain::{CountryId, Guess};
 
 use super::{
     layout,
@@ -108,6 +108,21 @@ impl Map {
         self.center_y = (self.center_y + vertical * step).clamp(NORTH, SOUTH);
     }
 
+    pub(super) fn center_on(&mut self, country: CountryId) -> bool {
+        let Some((center_x, center_y)) = self.countries.anchor(country.value()) else {
+            return false;
+        };
+        self.center_x = center_x;
+        self.center_y = center_y.clamp(NORTH, SOUTH);
+        true
+    }
+
+    #[cfg(test)]
+    pub(super) fn camera(&self) -> (f64, f64, f64) {
+        (self.center_x, self.center_y, self.zoom)
+    }
+
+    #[cfg(test)]
     pub(super) fn render(&self, area: Rect, buffer: &mut Buffer) {
         let theme = Theme::from_environment();
         self.render_with_guesses(area, buffer, &[], theme);
@@ -160,17 +175,23 @@ impl Map {
             );
         }
         if self.zoom >= DETAIL_ZOOM {
-            self.details.draw(
-                &mut dots,
-                dot_width,
-                dot_height,
-                self.center_x,
-                self.center_y,
-                scale,
-            );
+            self.details.draw(&mut dots, &mut countries, viewport);
         }
         render_dots(&dots, &countries, state, theme, dot_width, map_area, buffer);
-        self.render_anchors(&countries, state, theme, viewport, map_area, buffer);
+        self.render_anchors(
+            &visible_countries(
+                &countries,
+                dot_width,
+                rows,
+                columns,
+                self.countries.country_count(),
+            ),
+            state,
+            theme,
+            viewport,
+            map_area,
+            buffer,
+        );
         render_status(area, buffer, self.zoom);
     }
 
@@ -189,20 +210,31 @@ impl Map {
 }
 
 struct MapDetails {
-    islands: Vec<Vec<(f64, f64)>>,
+    islands: Vec<DetailPolygon>,
     western_sahara_border: Vec<(f64, f64)>,
+}
+
+struct DetailPolygon {
+    country: u16,
+    points: Vec<(f64, f64)>,
 }
 
 impl MapDetails {
     fn decode(bytes: &[u8]) -> Result<Self, String> {
-        if bytes.get(..4) != Some(b"WHDL") || read_u16(bytes, 4)? != 1 {
+        if bytes.get(..4) != Some(b"WHDL") || read_u16(bytes, 4)? != 2 {
             return Err("map detail asset has an invalid header".to_owned());
         }
         let island_count = usize::from(read_u16(bytes, 6)?);
         let mut offset = 8;
         let mut islands = Vec::with_capacity(island_count);
         for _ in 0..island_count {
-            islands.push(read_points(bytes, &mut offset)?);
+            islands.push(DetailPolygon {
+                country: read_u16(bytes, offset)?,
+                points: {
+                    offset += 2;
+                    read_points(bytes, &mut offset)?
+                },
+            });
         }
         let western_sahara_border = read_points(bytes, &mut offset)?;
         if offset != bytes.len() || islands.len() != 7 || western_sahara_border.len() != 15 {
@@ -214,26 +246,36 @@ impl MapDetails {
         })
     }
 
-    fn draw(
-        &self,
-        dots: &mut [u8],
-        width: usize,
-        height: usize,
-        center_x: f64,
-        center_y: f64,
-        scale: f64,
-    ) {
+    fn draw(&self, dots: &mut [u8], countries: &mut [u16], viewport: Viewport) {
         for island in &self.islands {
-            fill_geographic_land(dots, width, height, island, center_x, center_y, scale);
+            fill_geographic_land(
+                dots,
+                viewport.width,
+                viewport.height,
+                &island.points,
+                viewport.center_x,
+                viewport.center_y,
+                viewport.scale,
+            );
+            fill_geographic_country(
+                countries,
+                viewport.width,
+                viewport.height,
+                &island.points,
+                island.country,
+                viewport.center_x,
+                viewport.center_y,
+                viewport.scale,
+            );
         }
         draw_geographic_path(
             dots,
-            width,
-            height,
+            viewport.width,
+            viewport.height,
             &self.western_sahara_border,
-            center_x,
-            center_y,
-            scale,
+            viewport.center_x,
+            viewport.center_y,
+            viewport.scale,
         );
     }
 }
@@ -271,6 +313,40 @@ fn fill_geographic_land(
     }
     for edge in ring.windows(2) {
         clear_water_line(dots, width, edge[0], edge[1]);
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn fill_geographic_country(
+    countries: &mut [u16],
+    width: usize,
+    height: usize,
+    polygon: &[(f64, f64)],
+    country: u16,
+    center_x: f64,
+    center_y: f64,
+    scale: f64,
+) {
+    let mut ring = polygon
+        .iter()
+        .copied()
+        .map(|point| project_geographic_point(point, width, height, center_x, center_y, scale))
+        .collect::<Vec<_>>();
+    let Some(&first) = ring.first() else { return };
+    ring.push(first);
+    let Some(rows) = visible_rows(&[ring.as_slice()], width, height) else {
+        return;
+    };
+    for y in rows {
+        let mut intersections = ring_intersections(&ring, y as f64 + 0.5);
+        intersections.sort_by(f64::total_cmp);
+        for pair in intersections.chunks_exact(2) {
+            let start = pair[0].floor().max(0.0) as usize;
+            let end = pair[1].ceil().min(width as f64) as usize;
+            for x in start..end {
+                countries[y * width + x] = country;
+            }
+        }
     }
 }
 
@@ -623,7 +699,7 @@ fn render_dots(
 impl Map {
     fn render_anchors(
         &self,
-        countries: &[u16],
+        visible_countries: &[bool],
         state: &MapState,
         theme: Theme,
         viewport: Viewport,
@@ -633,7 +709,11 @@ impl Map {
         for (country, style) in state.country_styles.iter().enumerate() {
             let Some(style) = style else { continue };
             let country = country as u16;
-            if countries.contains(&country) {
+            if visible_countries
+                .get(usize::from(country))
+                .copied()
+                .unwrap_or(false)
+            {
                 continue;
             }
             let Some((world_x, world_y)) = self.countries.anchor(country) else {
@@ -659,12 +739,34 @@ impl Map {
     }
 }
 
+fn visible_countries(
+    countries: &[u16],
+    dot_width: usize,
+    rows: usize,
+    columns: usize,
+    country_count: usize,
+) -> Vec<bool> {
+    let mut visible = vec![false; country_count];
+    for row in 0..rows {
+        for column in 0..columns {
+            let country = usize::from(dominant_country(countries, dot_width, row, column));
+            if let Some(value) = visible.get_mut(country) {
+                *value = true;
+            }
+        }
+    }
+    visible
+}
+
 fn dominant_country(countries: &[u16], dot_width: usize, row: usize, column: usize) -> u16 {
     let mut selected = u16::MAX;
     let mut selected_count = 0;
     for dot_y in 0..4 {
         for dot_x in 0..2 {
             let candidate = countries[(row * 4 + dot_y) * dot_width + column * 2 + dot_x];
+            if candidate == u16::MAX {
+                continue;
+            }
             let count = (0..4)
                 .flat_map(|other_y| (0..2).map(move |other_x| (other_y, other_x)))
                 .filter(|&(other_y, other_x)| {
@@ -703,7 +805,7 @@ fn render_resize_message(area: Rect, buffer: &mut Buffer) {
 }
 
 fn status_line(zoom: f64) -> String {
-    format!("  {OSM_ATTRIBUTION}  |  Zoom {zoom:.2}  +/- zoom  Arrows/hjkl pan  Esc quit")
+    format!("  {OSM_ATTRIBUTION}  |  Zoom {zoom:.2}  +/- zoom  Arrows pan  Esc quit")
 }
 
 fn braille(mask: u8) -> String {

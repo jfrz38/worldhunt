@@ -1,3 +1,5 @@
+mod app;
+mod input;
 mod layout;
 mod map;
 mod mvt;
@@ -15,53 +17,92 @@ use std::{
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers, MouseEventKind};
 use ratatui::{Terminal, backend::CrosstermBackend};
 
-use self::terminal::{CrosstermControl, with_terminal};
+use crate::domain::ports::{CountryCatalog, CountryProximity, TargetSelector};
 
-pub fn run() -> io::Result<()> {
-    with_terminal(CrosstermControl::new(), run_event_loop)
+use self::{
+    app::TuiApp,
+    terminal::{CrosstermControl, with_terminal},
+};
+
+pub fn run<Catalog, ProximityPort, Selector>(
+    catalog: &Catalog,
+    proximity: &ProximityPort,
+    selector: &mut Selector,
+) -> io::Result<()>
+where
+    Catalog: CountryCatalog,
+    ProximityPort: CountryProximity,
+    Selector: TargetSelector,
+{
+    let app = TuiApp::new(catalog, proximity, selector)?;
+    with_terminal(CrosstermControl::new(), || run_event_loop(app))
 }
 
-fn run_event_loop() -> io::Result<()> {
+/// Renders production wiring without requiring an interactive terminal.
+pub fn render_initial_frame<Catalog, ProximityPort, Selector>(
+    catalog: &Catalog,
+    proximity: &ProximityPort,
+    selector: &mut Selector,
+    width: u16,
+    height: u16,
+) -> io::Result<()>
+where
+    Catalog: CountryCatalog,
+    ProximityPort: CountryProximity,
+    Selector: TargetSelector,
+{
+    let app = TuiApp::new(catalog, proximity, selector)?;
+    let map = map::Map::load().map_err(io::Error::other)?;
+    let backend = ratatui::backend::TestBackend::new(width, height);
+    let mut terminal = Terminal::new(backend).expect("TestBackend is infallible");
+    terminal
+        .draw(|frame| app.render(frame, &map))
+        .expect("TestBackend draw is infallible");
+    Ok(())
+}
+
+fn run_event_loop<Catalog, ProximityPort, Selector>(
+    mut app: TuiApp<'_, Catalog, ProximityPort, Selector>,
+) -> io::Result<()>
+where
+    Catalog: CountryCatalog,
+    ProximityPort: CountryProximity,
+    Selector: TargetSelector,
+{
     let backend = CrosstermBackend::new(stdout());
     let mut terminal = Terminal::new(backend)?;
     let mut map = map::Map::load().map_err(io::Error::other)?;
-    draw(&mut terminal, &map)?;
+    draw(&mut terminal, &app, &map)?;
 
     loop {
         let mut redraw = false;
         for action in pending_actions(event_action(event::read()?))? {
-            match action {
-                EventAction::Quit => return Ok(()),
-                EventAction::Zoom(steps) => {
-                    for _ in 0..steps.unsigned_abs() {
-                        if steps.is_positive() {
-                            map.zoom_in();
-                        } else {
-                            map.zoom_out();
-                        }
-                    }
-                    redraw = true;
-                }
-                EventAction::Pan(horizontal, vertical) => {
-                    map.pan(horizontal, vertical);
-                    redraw = true;
-                }
-                EventAction::Redraw => redraw = true,
-                EventAction::Wait => {}
+            if action != EventAction::Wait {
+                redraw = true;
             }
+            app.handle(action, &mut map);
+        }
+        if app.should_quit() {
+            return Ok(());
         }
         if redraw {
-            draw(&mut terminal, &map)?;
+            draw(&mut terminal, &app, &map)?;
         }
     }
 }
 
-fn draw(
+fn draw<Catalog, ProximityPort, Selector>(
     terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    app: &TuiApp<'_, Catalog, ProximityPort, Selector>,
     map: &map::Map,
-) -> io::Result<()> {
+) -> io::Result<()>
+where
+    Catalog: CountryCatalog,
+    ProximityPort: CountryProximity,
+    Selector: TargetSelector,
+{
     terminal.draw(|frame| {
-        map.render(frame.area(), frame.buffer_mut());
+        app.render(frame, map);
     })?;
     Ok(())
 }
@@ -71,6 +112,7 @@ enum EventAction {
     Quit,
     Zoom(i8),
     Pan(f64, f64),
+    Input(input::InputAction),
     Redraw,
     Wait,
 }
@@ -96,11 +138,11 @@ fn event_action(event: Event) -> EventAction {
             }
             KeyCode::Char('+') | KeyCode::Char('=') => EventAction::Zoom(1),
             KeyCode::Char('-') | KeyCode::Char('_') => EventAction::Zoom(-1),
-            KeyCode::Left | KeyCode::Char('h') => EventAction::Pan(-1.0, 0.0),
-            KeyCode::Right | KeyCode::Char('l') => EventAction::Pan(1.0, 0.0),
-            KeyCode::Up | KeyCode::Char('k') => EventAction::Pan(0.0, -1.0),
-            KeyCode::Down | KeyCode::Char('j') => EventAction::Pan(0.0, 1.0),
-            _ => EventAction::Wait,
+            KeyCode::Left => EventAction::Pan(-1.0, 0.0),
+            KeyCode::Right => EventAction::Pan(1.0, 0.0),
+            KeyCode::Up => EventAction::Pan(0.0, -1.0),
+            KeyCode::Down => EventAction::Pan(0.0, 1.0),
+            code => input::action_for(code).map_or(EventAction::Wait, EventAction::Input),
         },
         Event::Mouse(mouse) => match mouse.kind {
             MouseEventKind::ScrollUp => EventAction::Zoom(1),

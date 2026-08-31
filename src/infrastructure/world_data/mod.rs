@@ -9,7 +9,7 @@ pub use map_data::MapData;
 
 use crate::domain::{
     CountryId, GuessInput, Proximity,
-    ports::{CountryCatalog, CountryProximity},
+    ports::{CountryCatalog, CountryProximity, CountrySuggestion},
 };
 
 use self::{catalog::RuntimeCountryCatalog, proximity::ProximityData};
@@ -47,6 +47,18 @@ impl CountryCatalog for WorldData {
         self.catalog.playable()
     }
 
+    fn name(&self, country: CountryId) -> Option<&str> {
+        self.catalog.name(country)
+    }
+
+    fn search(&self, input: &GuessInput, limit: usize) -> Vec<CountryId> {
+        self.catalog.search(input, limit)
+    }
+
+    fn suggestions(&self, input: &GuessInput, limit: usize) -> Vec<CountrySuggestion> {
+        self.catalog.suggestions(input, limit)
+    }
+
     fn resolve(&self, input: &GuessInput) -> Option<CountryId> {
         self.catalog.resolve(input)
     }
@@ -61,35 +73,4 @@ impl CountryProximity for WorldData {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::{
-        domain::{
-            GuessInput,
-            ports::{CountryCatalog, CountryProximity},
-        },
-        infrastructure::world_data::WorldData,
-    };
-
-    #[test]
-    fn maps_embedded_catalog_and_proximity_to_domain_values() {
-        let world_data = WorldData::decode_embedded().expect("embedded data is valid");
-        assert_eq!(world_data.map_data().country_count(), 196);
-        assert_eq!(world_data.playable().len(), 196);
-        let france = world_data
-            .resolve(&GuessInput::new("France"))
-            .expect("France is playable");
-        let spain = world_data
-            .resolve(&GuessInput::new("Spain"))
-            .expect("Spain is playable");
-        assert!(
-            world_data
-                .between(france, spain)
-                .expect("known IDs")
-                .is_adjacent()
-        );
-        assert_eq!(
-            world_data.between(crate::domain::CountryId::new(196), france),
-            None
-        );
-    }
-}
+mod tests;

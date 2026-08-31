@@ -1456,6 +1456,8 @@ dependencies = [
  "serde",
  "toml",
  "unicode-normalization",
+ "unicode-segmentation",
+ "unicode-width",
 ]
 
 [[package]]
