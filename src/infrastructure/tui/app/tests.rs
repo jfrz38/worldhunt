@@ -3,7 +3,7 @@ use ratatui::{Terminal, backend::TestBackend};
 
 use crate::{
     domain::{
-        CountryId, GuessInput, Proximity,
+        CountryId, GuessClue, GuessInput, Proximity,
         ports::{CountryCatalog, CountryProximity, TargetSelector},
     },
     infrastructure::tui::{EventAction, app::TuiApp, input, map::Map},
@@ -406,6 +406,28 @@ fn surrender_reveals_the_target_and_allows_a_new_game() {
     );
     assert!(!app.surrendered);
     assert!(app.message.is_none());
+}
+
+#[test]
+fn surrender_highlights_the_target_in_the_map_without_recording_a_guess() {
+    let mut selector = Selector(CountryId::new(1));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+
+    for character in "/surrender".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut map,
+        );
+    }
+    app.handle(EventAction::Input(input::InputAction::Submit), &mut map);
+
+    let guesses = app.rendered_guesses_for_map();
+
+    assert!(app.game.guesses().is_empty());
+    assert!(guesses.iter().any(|guess| {
+        guess.country() == CountryId::new(1) && guess.clue() == GuessClue::Target
+    }));
 }
 
 #[test]

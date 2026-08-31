@@ -12,7 +12,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     application::{StartGame, SubmitGuess, SubmitGuessOutcome},
     domain::{
-        CountryId, Game, GameStatus, GuessClue, GuessInput,
+        CountryId, Game, GameStatus, Guess, GuessClue, GuessInput,
         ports::{CountryCatalog, CountryProximity, TargetSelector},
     },
 };
@@ -129,10 +129,11 @@ where
             Block::default().borders(Borders::ALL).title(" WorldHunt "),
             content[0],
         );
+        let guesses = self.rendered_guesses_for_map();
         map.render_with_guesses(
             map_area,
             frame.buffer_mut(),
-            self.game.guesses(),
+            &guesses,
             super::theme::Theme::from_environment(),
         );
         self.render_history(frame, content[1]);
@@ -342,6 +343,15 @@ where
 
     fn country_name(&self, country: CountryId) -> &str {
         self.catalog.name(country).unwrap_or("Unknown country")
+    }
+
+    fn rendered_guesses_for_map(&self) -> Vec<Guess> {
+        let mut guesses = self.game.guesses().to_vec();
+        let target = self.game.target();
+        if self.surrendered && !guesses.iter().any(|guess| guess.country() == target) {
+            guesses.push(Guess::new(target, GuessClue::Target));
+        }
+        guesses
     }
 
     fn suggestions(&self) -> Vec<crate::domain::ports::CountrySuggestion> {
