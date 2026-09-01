@@ -1,7 +1,7 @@
 # Iteration 008: Hardening
 
-Status: Planned  
-Started:  
+Status: Blocked
+Started: 2026-09-01
 Completed:
 
 ## Goal
@@ -31,7 +31,7 @@ calling the local game release-ready.
 
 ## Tasks
 
-- [ ] Run all quality checks with warnings denied.
+- [x] Run all quality checks with warnings denied.
 - [ ] Expand unit tests for synthetic polygon, island, hole, pole, and
   antimeridian behavior.
 - [ ] Audit all asset decoder length and identifier checks.
@@ -61,15 +61,35 @@ calling the local game release-ready.
 
 ## Verification
 
-Not run; iteration has not started.
+- `make check`: passed on 2026-09-01: format, Clippy with warnings denied,
+  130 tests (one ignored engineering measurement), catalog validation, and
+  deterministic asset regeneration.
+- `make ci`: passed on 2026-09-01, including all workspace targets.
+- `cargo test --release --test performance -- --ignored --nocapture`: passed on
+  2026-09-01. Windows 11 Pro 64-bit (10.0.26200), Intel i7-10750H, 15.8 GiB
+  RAM, commit `5213dcf1ee7e1bbc39592e4a0602153595109fdc`. Decode p95 was
+  3.47 ms; render p95 was 20.83 ms (48x20), 33.01 ms (70x30), 30.03 ms
+  (100x30), and 37.94 ms (200x60). `assets/world-v2.bin` is 764,068 bytes and
+  `worldhunt.exe` is 2,750,976 bytes. Peak RSS and real-TTY first-frame timing
+  remain pending manual measurement.
+- Manual interactive smoke for iteration 007: pending in a real TTY. It blocks
+  the status transition to `In Progress` and all completion claims for 008.
 
 ## Decisions
 
-None yet.
+- The decoder validates binary structure, encoded identifiers, anchor bounds,
+  and proximity invariants. Raster ownership of anchors remains a generator
+  invariant rather than a runtime requirement because valid source-selected
+  anchors can fall outside the reduced raster.
+- The ignored performance harness uses only public production APIs and reports
+  median and p95 from 20 post-warmup samples. It is intentionally excluded from
+  `make check` until platform measurements establish regression budgets.
 
 ## Deviations
 
-None yet.
+- Automated hardening work began while 007 remains open because its only
+  remaining evidence is an external interactive-terminal smoke test. The
+  iteration is therefore `Blocked`, not `In Progress`, until that gate is met.
 
 ## Outcome
 

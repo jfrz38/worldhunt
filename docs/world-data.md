@@ -98,8 +98,9 @@ is guessed.
 asset. Its `WHMP` version-2 layout has a 36-byte header followed by raster
 identifiers, borders, anchors, a full row-major `u16` distance matrix, and a
 full row-major `u8` adjacency matrix (`0` or `1`). Matrix order is the stable
-catalog order and the runtime validates all lengths, diagonals, symmetry, and
-adjacent/zero-distance consistency before it exposes the data. The active TUI
+catalog order and the runtime validates all lengths, encoded identifiers, anchor
+bounds, diagonals, symmetry, and adjacent/zero-distance consistency before it
+exposes the data. The active TUI
 instead renders embedded Web Mercator OpenStreetMap basemap tiles, country-ID
 overlay tiles, and a small details asset. Those representations share stable
 catalog indexes but are not used for territorial distance calculations.

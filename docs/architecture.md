@@ -173,8 +173,8 @@ state, but it never mutates the game or decides business rules.
 proximity asset. The active TUI map embeds an offline OSM basemap, versioned
 country-ID overlay tiles, anchors, and map details directly:
 
-- `decoder` validates magic, version, lengths, identifier ranges, and section
-  consistency before exposing data.
+- `decoder` validates magic, version, section lengths, encoded identifier ranges,
+  anchor bounds, and proximity invariants before exposing data.
 - `catalog` implements the `CountryCatalog` port.
 - `proximity` owns validated decoded matrices and private constant-time
   row-major lookup. Iteration 005 will adapt it to the `CountryProximity` port.

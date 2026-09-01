@@ -28,8 +28,9 @@ map preserves its world aspect ratio and is centered inside the available
 space. A terminal below the supported minimum displays a resize message rather
 than a broken layout.
 
-Exact breakpoints and minimum dimensions will be selected from rendered test
-cases rather than assumed from terminal character dimensions.
+The supported minimum is `48x20`. At width `90` and above, map and history are
+side by side; below it they stack. Smaller areas show a recovery message without
+mutating game or navigation state.
 
 ## Controls
 
@@ -95,14 +96,14 @@ players who cannot distinguish all shades.
 
 ## Color Capability
 
-The renderer provides a truecolor palette and an ANSI 256-color palette. It
-must honor the conventional `NO_COLOR` environment variable. Monochrome mode
-uses glyph or intensity differences plus the textual history; it does not need
-to reproduce the full visual gradient.
+The renderer provides a truecolor palette and an ANSI 256-color palette.
+`WORLDHUNT_COLOR=truecolor|ansi256|mono` selects an explicit mode; an explicit
+valid selection takes precedence over `NO_COLOR`. `NO_COLOR` otherwise selects
+monochrome, as do unknown overrides when it is present. Monochrome uses text
+and non-color styles: target is bold, a shared border is underlined, and the
+nearest distance band is reversed.
 
-Capability detection and explicit override behavior will be finalized during
-iteration 006. Incorrect capability detection must degrade appearance, not
-break gameplay.
+Incorrect capability detection must degrade appearance, not break gameplay.
 
 ## Map Navigation
 
