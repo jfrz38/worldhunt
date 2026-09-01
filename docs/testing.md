@@ -216,6 +216,19 @@ sizes, generated asset size, and final binary size. These are engineering
 checks, not a third test category. Initial limits are set only after the first
 complete implementation is measured.
 
+The ignored `tests/performance.rs` harness measures embedded-data decoding and
+initial-frame rendering through public production APIs. It warms each scenario,
+collects 20 samples for `48x20`, `70x30`, `100x30`, and `200x60`, then reports
+the median and p95. Run it explicitly with:
+
+```text
+cargo test --release --test performance -- --ignored --nocapture
+```
+
+First-frame wall-clock and peak RSS measurements remain manual, platform-native
+observations. Their command, terminal, hardware, and commit must be recorded
+with the resulting budgets rather than asserted as fragile CI timings.
+
 ## Completion Rule
 
 An iteration is `Completed` only after its acceptance criteria, relevant unit

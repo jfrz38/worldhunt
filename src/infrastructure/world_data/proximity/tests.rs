@@ -17,6 +17,15 @@ fn looks_up_a_symmetric_adjacent_pair() {
 
 #[test]
 fn rejects_invalid_matrix_invariants() {
-    assert!(ProximityData::new(2, vec![0, 1, 0, 0], vec![false; 4]).is_err());
-    assert!(ProximityData::new(2, vec![0; 4], vec![true, false, false, false]).is_err());
+    let invalid_matrices = [
+        (vec![0, 1, 0, 0], vec![false; 4]),
+        (vec![0; 4], vec![true, false, false, false]),
+        (vec![0, 0, 0, 1], vec![false; 4]),
+        (vec![0, 1, 1, 0], vec![false, true, true, false]),
+        (vec![0; 3], vec![false; 4]),
+    ];
+
+    for (distances, adjacency) in invalid_matrices {
+        assert!(ProximityData::new(2, distances, adjacency).is_err());
+    }
 }

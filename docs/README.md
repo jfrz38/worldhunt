@@ -44,7 +44,7 @@ when implementation starts, not when its plan is written.
 | [005](iterations/005-game-domain.md) | Implement the game independently of the TUI | Completed |
 | [006](iterations/006-map-rendering.md) | Render a responsive colored terminal map | Completed |
 | [007](iterations/007-playable-tui.md) | Integrate input, attempts, victory, and new games | In Progress |
-| [008](iterations/008-hardening.md) | Harden behavior, tests, performance, and portability | Planned |
+| [008](iterations/008-hardening.md) | Harden behavior, tests, performance, and portability | Blocked |
 | [009](iterations/009-mvp-release.md) | Prepare the first distributable release | Planned |
 
 Iteration status values are `Planned`, `In Progress`, `Blocked`, `Completed`,

@@ -26,6 +26,11 @@ matching country names appear and `Tab` completes the first option; press
 country without changing zoom. Press `Esc` or `Ctrl+C` to exit, use `+`/`-` to
 zoom and arrows to pan; resizing redraws the offline map.
 
+Use `WORLDHUNT_COLOR=truecolor`, `WORLDHUNT_COLOR=ansi256`, or
+`WORLDHUNT_COLOR=mono` to select a color mode. Without an explicit mode,
+`NO_COLOR` selects monochrome. Textual distance and border clues remain visible
+in all modes.
+
 ## Quality Checks
 
 ```sh
