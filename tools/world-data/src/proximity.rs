@@ -203,10 +203,24 @@ fn normalize_polygon(rings: &[Vec<Vec<f64>>]) -> Result<TerritorialPolygon, Stri
 }
 
 fn unwrap_ring(ring: &[Vec<f64>], reference: Option<f64>) -> Result<Vec<Coord<f64>>, String> {
+    if ring.len() < 4 {
+        return Err("polygon ring has fewer than four positions".to_owned());
+    }
     let first = ring.first().ok_or("polygon ring is empty")?;
+    if first.len() != 2 || ring.last() != Some(first) {
+        return Err("polygon ring is not a closed longitude-latitude ring".to_owned());
+    }
     let mut longitude = first[0];
     let mut coordinates = Vec::with_capacity(ring.len());
     for point in ring {
+        if point.len() != 2
+            || !point[0].is_finite()
+            || !point[1].is_finite()
+            || !(-180.0..=180.0).contains(&point[0])
+            || !(-90.0..=90.0).contains(&point[1])
+        {
+            return Err("polygon position is not a valid longitude-latitude pair".to_owned());
+        }
         longitude = unwrap_longitude(point[0], longitude);
         coordinates.push(Coord {
             x: longitude,
