@@ -110,6 +110,47 @@ fn calculates_finite_proximity_near_a_pole() {
     assert!(distance <= 1);
 }
 
+#[test]
+fn preserves_holes_and_concave_exteriors() {
+    let exterior = square(0.0, 0.0, 4.0, 4.0);
+    let hole = square(1.0, 1.0, 3.0, 3.0);
+    let polygon = normalize_polygon(&[exterior, hole]).expect("valid polygon with hole");
+    assert_eq!(polygon.polygon.interiors().len(), 1);
+
+    let concave = vec![
+        vec![0.0, 0.0],
+        vec![4.0, 0.0],
+        vec![4.0, 1.0],
+        vec![1.0, 1.0],
+        vec![1.0, 4.0],
+        vec![0.0, 4.0],
+        vec![0.0, 0.0],
+    ];
+    assert!(normalize_polygon(&[concave]).is_ok());
+}
+
+#[test]
+fn rejects_invalid_polygon_positions_without_panicking() {
+    for ring in [
+        vec![vec![0.0, 0.0], vec![1.0, 0.0]],
+        vec![
+            vec![0.0, 0.0],
+            vec![1.0, 0.0],
+            vec![1.0, 1.0],
+            vec![0.0, 1.0],
+        ],
+        vec![vec![0.0, 0.0], vec![1.0], vec![1.0, 1.0], vec![0.0, 0.0]],
+        vec![
+            vec![0.0, 0.0],
+            vec![181.0, 0.0],
+            vec![1.0, 1.0],
+            vec![0.0, 0.0],
+        ],
+    ] {
+        assert!(normalize_polygon(&[ring]).is_err());
+    }
+}
+
 fn square(
     minimum_longitude: f64,
     minimum_latitude: f64,

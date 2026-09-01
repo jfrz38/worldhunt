@@ -588,6 +588,42 @@ fn too_small_frame_explains_how_to_recover() {
     assert!(content.contains("Resize terminal"));
 }
 
+#[test]
+fn resize_redraws_all_supported_boundary_sizes_without_changing_game_state() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+    app.handle(
+        EventAction::Input(input::InputAction::Insert('S')),
+        &mut map,
+    );
+    app.handle(
+        EventAction::Input(input::InputAction::Insert('p')),
+        &mut map,
+    );
+
+    for (width, height) in [
+        (1, 1),
+        (47, 20),
+        (48, 19),
+        (48, 20),
+        (89, 30),
+        (90, 30),
+        (200, 60),
+    ] {
+        let mut terminal =
+            Terminal::new(TestBackend::new(width, height)).expect("test terminal starts");
+        terminal
+            .draw(|frame| app.render(frame, &map))
+            .expect("resize frame renders without panic");
+        app.handle(EventAction::Redraw, &mut map);
+    }
+
+    assert_eq!(app.input, "Sp");
+    assert!(app.game.guesses().is_empty());
+    assert_eq!(app.selected_suggestion, None);
+}
+
 fn terminal_row(terminal: &Terminal<TestBackend>, row: u16) -> String {
     (0..terminal.backend().buffer().area().width)
         .map(|column| terminal.backend().buffer()[(column, row)].symbol())
