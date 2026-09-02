@@ -1,8 +1,12 @@
+
 # WorldHunt
 
 `worldhunt` is a hot-and-cold geography guessing game for your terminal.
 
 Guess countries, use their distance to narrow down the hidden target, and watch your attempts get highlighted on an interactive world map as you get closer.
+
+
+https://github.com/user-attachments/assets/c8230141-3345-4453-91b8-eff04bb03bd5
 
 ## Documentation
 
