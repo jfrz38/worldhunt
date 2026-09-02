@@ -31,7 +31,7 @@ jobs:
           version-replacement: 'version = "{version}"'
           base-branch: develop
           github-token: ${{ github.token }}
-          commit-message: 'chore: bump version to {new-version}'
-          pr-title: 'chore: bump version to {new-version}'
-          pr-body: 'Bumps WorldHunt from {current-version} to {next-version} using a {bump} release bump.'
+          commit-message: "chore: bump version to {new-version}"
+          pr-title: "chore: bump version to {new-version}"
+          pr-body: "Bumps WorldHunt from {current-version} to {next-version} using a {bump} release bump."
           pre-commit-commands: cargo generate-lockfile

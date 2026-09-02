@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.release.outputs.tag }}
-      version: ${{ steps.release.outputs.version }}
+      version: ${{ steps.version-check.outputs.local-version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,12 +33,27 @@ jobs:
           git fetch --tags --force
           git rev-parse "$tag^{commit}" >/dev/null
           git merge-base --is-ancestor "$tag^{commit}" HEAD
-          tag_version="$(git show "$tag:Cargo.toml" | sed -n 's/^version = "\([0-9][0-9.]*\)"$/\1/p' | head -n 1)"
-          test "$tag_version" = "$version"
-          status="$(curl --silent --output /tmp/crate.json --write-out '%{http_code}' "https://crates.io/api/v1/crates/worldhunt/$version")"
-          test "$status" = "404"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Check out selected release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+      - name: Check version can be published
+        id: version-check
+        uses: jfrz38/check-version-change@c087b716b54ed45079f2440924db036f636539b3 # v1.3.1
+        with:
+          file-path: Cargo.toml
+          package-name: worldhunt
+          compare-source: registry
+          registry: crates-io
+          fail-on-unchanged: true
+          fail-on-not-higher: true
+      - name: Verify selected tag matches package version
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.version-check.outputs.local-version }}
+        shell: bash
+        run: test "$TAG" = "v$VERSION"
 
   publish:
     needs: select-release

@@ -20,13 +20,15 @@ only: there are no prebuilt binaries, archives, checksums, or installers.
 2. Review, merge, and validate the bump pull request on `develop`.
 3. Promote the approved commit from `develop` to `main`.
 4. The **Release** workflow validates the clean package. When a push to `main`
-   changes the root package version, it creates the immutable `v<version>` tag
-   and a GitHub Release with generated notes. A manual **Release** dispatch is
-   validation only; it never creates a tag or release.
+   changes the root package version to a higher SemVer version, it creates the
+   immutable `v<version>` tag and a GitHub Release with generated notes. A
+   manual **Release** dispatch is validation only; it never creates a tag or
+   release.
 5. For versions after `0.1.0`, run **Publish to crates.io** manually from
    `main`. It selects the latest stable GitHub Release, verifies its tag is an
-   ancestor of `main`, validates the tag's package, and publishes through the
-   protected `crates-publish` Environment.
+   ancestor of `main`, requires its version to be unpublished and newer than
+   crates.io's latest version, validates the tag's package, and publishes
+   through the protected `crates-publish` Environment.
 
 Never move, delete, or reuse a release tag. If the release workflow is retried,
 it accepts an existing tag only when that tag resolves to the current `main`
