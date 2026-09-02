@@ -5,6 +5,25 @@ edition = "2024"
 rust-version = "1.88"
 description = "A hot-and-cold geography guessing game for the terminal"
 license = "MIT"
+repository = "https://github.com/jfrz38/worldhunt"
+readme = "README.md"
+keywords = ["game", "geography", "terminal", "tui", "countries"]
+categories = ["command-line-utilities", "games"]
+include = [
+    "Cargo.toml",
+    "Cargo.lock",
+    "LICENSE",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md",
+    "src/**",
+    "assets/world-v2.bin",
+    "assets/map-details-v1.bin",
+    "assets/country-map-v1/**",
+    "data/countries.toml",
+    "data/source/world-boundaries.metadata.toml",
+    "data/source/world-details.metadata.toml",
+    "data/source/openstreetmap/**",
+]
 
 [workspace]
 members = [".", "tools/world-data"]

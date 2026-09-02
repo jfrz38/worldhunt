@@ -6,8 +6,8 @@ design, architectural decisions, and implementation progress.
 ## Current Status
 
 - Project phase: implementation
-- Active iteration: [007 - Playable TUI](iterations/007-playable-tui.md)
-- Next iteration: [008 - Hardening](iterations/008-hardening.md)
+- Active iteration: [009 - MVP Release](iterations/009-mvp-release.md)
+- Next iteration: none; complete pending MVP evidence before planning follow-up work
 - MVP target: a fully local, cross-platform terminal geography game
 
 Only one iteration may be `In Progress` at a time. An iteration becomes active
@@ -43,9 +43,9 @@ when implementation starts, not when its plan is written.
 | [004](iterations/004-distance-calculation.md) | Precompute territorial distances and adjacency | Completed |
 | [005](iterations/005-game-domain.md) | Implement the game independently of the TUI | Completed |
 | [006](iterations/006-map-rendering.md) | Render a responsive colored terminal map | Completed |
-| [007](iterations/007-playable-tui.md) | Integrate input, attempts, victory, and new games | In Progress |
+| [007](iterations/007-playable-tui.md) | Integrate input, attempts, victory, and new games | Blocked |
 | [008](iterations/008-hardening.md) | Harden behavior, tests, performance, and portability | Blocked |
-| [009](iterations/009-mvp-release.md) | Prepare the first distributable release | Planned |
+| [009](iterations/009-mvp-release.md) | Prepare the first crates.io release | In Progress |
 
 Iteration status values are `Planned`, `In Progress`, `Blocked`, `Completed`,
 and `Superseded`. See [the iteration workflow](iterations/README.md) for update
