@@ -1,0 +1,37 @@
+name: Bump Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: SemVer component to increment
+        required: true
+        type: choice
+        options: [patch, minor, major]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: jfrz38/auto-version-bump-action@72e195a978a7b6b433b39bfef52d335b6fe609b6 # v0.3.0
+        with:
+          bump: ${{ inputs.bump }}
+          strategy: regex
+          version-file: Cargo.toml
+          version-pattern: '^version\s*=\s*"(\d+\.\d+\.\d+)"'
+          version-replacement: 'version = "{version}"'
+          base-branch: develop
+          github-token: ${{ github.token }}
+          commit-message: "chore: bump version to {new-version}"
+          pr-title: "chore: bump version to {new-version}"
+          pr-body: "Bumps WorldHunt from {current-version} to {next-version} using a {bump} release bump."
+          pre-commit-commands: cargo generate-lockfile

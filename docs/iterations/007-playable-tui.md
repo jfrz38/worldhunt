@@ -1,6 +1,6 @@
 # Iteration 007: Playable TUI
 
-Status: In Progress
+Status: Blocked
 Started: 2026-08-30
 Completed:
 
