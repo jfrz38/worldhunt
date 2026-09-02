@@ -1,3 +1,4 @@
+
 # WorldHunt
 
 [![CI](https://github.com/jfrz38/worldhunt/actions/workflows/ci.yml/badge.svg)](https://github.com/jfrz38/worldhunt/actions/workflows/ci.yml)
@@ -9,6 +10,8 @@
 WorldHunt is an offline hot-and-cold geography guessing game for the terminal.
 Guess a country, use distance and border clues to narrow down the hidden target,
 and follow each attempt on an interactive world map.
+
+https://github.com/user-attachments/assets/c8230141-3345-4453-91b8-eff04bb03bd5
 
 ## Install
 
