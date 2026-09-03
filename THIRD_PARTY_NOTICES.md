@@ -2,15 +2,19 @@
 
 ## World Administrative Boundaries
 
-`data/source/world-boundaries.json` is a snapshot of the World Food Programme
-(WFP), a United Nations agency, dataset **World Administrative Boundaries -
-Countries and Territories**. It is distributed by OpenDataSoft under the
-[Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
+The repository source snapshot, and the derived geographic assets included in
+this crate, originate from the World Food Programme (WFP), a United Nations
+agency, dataset **World Administrative Boundaries - Countries and Territories**.
+It is distributed by OpenDataSoft under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
 
-WorldHunt code is licensed under MIT. The geographic source data and derivative
-geographic data retain their applicable data licence and attribution. The exact
-snapshot URL, retrieval date, publisher, licence, and SHA-256 checksum are
-recorded in `data/source/world-boundaries.metadata.toml`.
+Contains public sector information licensed under the Open Government Licence
+v3.0.
+
+WorldHunt code is licensed under MIT. Geographic data and derived geographic
+assets retain their applicable data licence and attribution. The published crate
+does not include the raw source snapshot. Its exact URL, retrieval date,
+publisher, licence, and SHA-256 checksum are recorded in
+`data/source/world-boundaries.metadata.toml`.
 
 ## OpenStreetMap
 
