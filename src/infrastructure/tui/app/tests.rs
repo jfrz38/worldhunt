@@ -264,6 +264,35 @@ fn tab_cycles_suggestions_and_enter_completes_the_selected_one() {
 }
 
 #[test]
+fn suggestions_hide_countries_already_guessed() {
+    let mut selector = Selector(CountryId::new(3));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+
+    for character in "France".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut map,
+        );
+    }
+    app.handle(EventAction::Input(input::InputAction::Submit), &mut map);
+    for character in "Mo".chars() {
+        app.handle(
+            EventAction::Input(input::InputAction::Insert(character)),
+            &mut map,
+        );
+    }
+
+    assert_eq!(
+        app.suggestions()
+            .into_iter()
+            .map(|suggestion| suggestion.completion)
+            .collect::<Vec<_>>(),
+        ["Monaco"]
+    );
+}
+
+#[test]
 fn selected_suggestion_uses_inverse_video() {
     use ratatui::style::Modifier;
 
