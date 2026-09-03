@@ -7,6 +7,10 @@ only: there are no prebuilt binaries, archives, checksums, or installers.
 
 - The release candidate has been reviewed and merged into `develop`.
 - `make check` and `make release-check-clean` pass from a clean checkout.
+- The repository is public so crates.io visitors can access its source, issue
+  tracker, README links, and attribution documents.
+- GNU Make and a POSIX shell are available. Use Linux, macOS, WSL, or Git Bash;
+  the commands below are not native Windows PowerShell commands.
 - Repository Actions may create pull requests, and the `crates-publish` GitHub
   Environment exists with the required reviewer protection.
 - For releases after `0.1.0`, crates.io Trusted Publishing is configured for
@@ -18,7 +22,9 @@ only: there are no prebuilt binaries, archives, checksums, or installers.
    `major`. It always creates a draft version-bump pull request against
    `develop` and regenerates `Cargo.lock`.
 2. Review, merge, and validate the bump pull request on `develop`.
-3. Promote the approved commit from `develop` to `main`.
+3. Open and merge a pull request from `develop` to `main`. Do not fast-forward
+   `main`: the release workflow compares the candidate with its previous main
+   commit to decide whether to create a tag.
 4. The **Release** workflow validates the clean package. When a push to `main`
    changes the root package version to a higher SemVer version, it creates the
    immutable `v<version>` tag and a GitHub Release with generated notes. A
@@ -41,11 +47,11 @@ have a crate to associate with the repository. After `v0.1.0` exists and points
 to the promoted `main` commit, use a temporary publish-only crates.io token on
 the local machine:
 
-```powershell
+```sh
 git fetch --tags origin
 git switch --detach v0.1.0
 make release-check-clean
-cargo publish --locked -p worldhunt --token $env:CARGO_REGISTRY_TOKEN
+cargo publish --locked -p worldhunt --token "$CARGO_REGISTRY_TOKEN"
 ```
 
 Create `CARGO_REGISTRY_TOKEN` only for this command, restrict it to publishing
@@ -62,8 +68,8 @@ publishing job.
 Crates.io versions are immutable. If a published version must be withdrawn,
 yank it rather than changing its tag:
 
-```powershell
-cargo yank --version 0.1.0 --token $env:CARGO_REGISTRY_TOKEN
+```sh
+cargo yank --version 0.1.0 --token "$CARGO_REGISTRY_TOKEN"
 ```
 
 Publish a corrected, new version through the normal bump and release flow.

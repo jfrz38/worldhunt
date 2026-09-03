@@ -111,6 +111,7 @@ where
 enum EventAction {
     Quit,
     Zoom(i8),
+    ZoomOutOrInsertHyphen,
     Pan(f64, f64),
     Input(input::InputAction),
     Redraw,
@@ -137,7 +138,8 @@ fn event_action(event: Event) -> EventAction {
                 EventAction::Quit
             }
             KeyCode::Char('+') | KeyCode::Char('=') => EventAction::Zoom(1),
-            KeyCode::Char('-') | KeyCode::Char('_') => EventAction::Zoom(-1),
+            KeyCode::Char('-') => EventAction::ZoomOutOrInsertHyphen,
+            KeyCode::Char('_') => EventAction::Zoom(-1),
             KeyCode::Left => EventAction::Pan(-1.0, 0.0),
             KeyCode::Right => EventAction::Pan(1.0, 0.0),
             KeyCode::Up => EventAction::Pan(0.0, -1.0),

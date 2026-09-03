@@ -1,4 +1,4 @@
-use super::{TilePosition, Viewport, fill_country_polygon};
+use super::{TilePosition, Viewport, fill_country_polygon, world_copies};
 use crate::infrastructure::tui::mvt::{self, Tile};
 const COUNTRY_COUNT: usize = 196;
 const NEUTRAL_LAND: usize = (u16::MAX - 1) as usize;
@@ -51,33 +51,36 @@ impl CountryOverlay {
                 (&self.zoom_one[3], 1, 1, 1),
             ]
         };
-        for (tile, x, y, tile_zoom) in tiles {
-            let position = TilePosition {
-                x,
-                y,
-                zoom: tile_zoom,
-            };
-            for layer in &tile.layers {
-                if layer.name != "country" {
-                    continue;
-                }
-                let extent = layer.extent.unwrap_or(4096);
-                for feature in &layer.features {
-                    let Some(country_id) = mvt::unsigned_property(layer, feature, "country_id")
-                    else {
+        for world_copy in world_copies(viewport) {
+            for (tile, x, y, tile_zoom) in &tiles {
+                let position = TilePosition {
+                    x: *x,
+                    y: *y,
+                    zoom: *tile_zoom,
+                };
+                for layer in &tile.layers {
+                    if layer.name != "country" {
                         continue;
-                    };
-                    let Ok(country_id) = u16::try_from(country_id) else {
-                        continue;
-                    };
-                    fill_country_polygon(
-                        countries,
-                        extent,
-                        &mvt::decode_geometry(&feature.geometry),
-                        country_id,
-                        position,
-                        viewport,
-                    );
+                    }
+                    let extent = layer.extent.unwrap_or(4096);
+                    for feature in &layer.features {
+                        let Some(country_id) = mvt::unsigned_property(layer, feature, "country_id")
+                        else {
+                            continue;
+                        };
+                        let Ok(country_id) = u16::try_from(country_id) else {
+                            continue;
+                        };
+                        fill_country_polygon(
+                            countries,
+                            extent,
+                            &mvt::decode_geometry(&feature.geometry),
+                            country_id,
+                            position,
+                            viewport,
+                            world_copy,
+                        );
+                    }
                 }
             }
         }

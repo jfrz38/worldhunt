@@ -162,17 +162,20 @@ impl Map {
 
         self.countries.draw(&mut countries, viewport, self.zoom);
 
-        for (tile, tile_x, tile_y, zoom) in self.active_tiles() {
-            draw_tile(
-                &mut dots,
-                tile,
-                TilePosition {
-                    x: tile_x,
-                    y: tile_y,
-                    zoom,
-                },
-                viewport,
-            );
+        for world_copy in world_copies(viewport) {
+            for (tile, tile_x, tile_y, zoom) in self.active_tiles() {
+                draw_tile(
+                    &mut dots,
+                    tile,
+                    TilePosition {
+                        x: tile_x,
+                        y: tile_y,
+                        zoom,
+                    },
+                    viewport,
+                    world_copy,
+                );
+            }
         }
         if self.zoom >= DETAIL_ZOOM {
             self.details.draw(&mut dots, &mut countries, viewport);
@@ -247,57 +250,37 @@ impl MapDetails {
     }
 
     fn draw(&self, dots: &mut [u8], countries: &mut [u16], viewport: Viewport) {
-        for island in &self.islands {
-            fill_geographic_land(
-                dots,
-                viewport.width,
-                viewport.height,
-                &island.points,
-                viewport.center_x,
-                viewport.center_y,
-                viewport.scale,
-            );
-            fill_geographic_country(
-                countries,
-                viewport.width,
-                viewport.height,
-                &island.points,
-                island.country,
-                viewport.center_x,
-                viewport.center_y,
-                viewport.scale,
-            );
+        for world_copy in world_copies(viewport) {
+            for island in &self.islands {
+                fill_geographic_land(dots, &island.points, viewport, world_copy);
+                fill_geographic_country(
+                    countries,
+                    &island.points,
+                    island.country,
+                    viewport,
+                    world_copy,
+                );
+            }
+            draw_geographic_path(dots, &self.western_sahara_border, viewport, world_copy);
         }
-        draw_geographic_path(
-            dots,
-            viewport.width,
-            viewport.height,
-            &self.western_sahara_border,
-            viewport.center_x,
-            viewport.center_y,
-            viewport.scale,
-        );
     }
 }
 
 fn fill_geographic_land(
     dots: &mut [u8],
-    width: usize,
-    height: usize,
     polygon: &[(f64, f64)],
-    center_x: f64,
-    center_y: f64,
-    scale: f64,
+    viewport: Viewport,
+    world_copy: i32,
 ) {
     let mut ring = polygon
         .iter()
         .copied()
-        .map(|point| project_geographic_point(point, width, height, center_x, center_y, scale))
+        .map(|point| project_geographic_point(point, viewport, world_copy))
         .collect::<Vec<_>>();
     let Some(&first) = ring.first() else { return };
     ring.push(first);
 
-    let Some(rows) = visible_rows(&[ring.as_slice()], width, height) else {
+    let Some(rows) = visible_rows(&[ring.as_slice()], viewport.width, viewport.height) else {
         return;
     };
     for y in rows {
@@ -305,36 +288,32 @@ fn fill_geographic_land(
         intersections.sort_by(f64::total_cmp);
         for pair in intersections.chunks_exact(2) {
             let start = pair[0].floor().max(0.0) as usize;
-            let end = pair[1].ceil().min(width as f64) as usize;
+            let end = pair[1].ceil().min(viewport.width as f64) as usize;
             for x in start..end {
-                clear_water(dots, width, x as i32, y as i32);
+                clear_water(dots, viewport.width, x as i32, y as i32);
             }
         }
     }
     for edge in ring.windows(2) {
-        clear_water_line(dots, width, edge[0], edge[1]);
+        clear_water_line(dots, viewport.width, edge[0], edge[1]);
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn fill_geographic_country(
     countries: &mut [u16],
-    width: usize,
-    height: usize,
     polygon: &[(f64, f64)],
     country: u16,
-    center_x: f64,
-    center_y: f64,
-    scale: f64,
+    viewport: Viewport,
+    world_copy: i32,
 ) {
     let mut ring = polygon
         .iter()
         .copied()
-        .map(|point| project_geographic_point(point, width, height, center_x, center_y, scale))
+        .map(|point| project_geographic_point(point, viewport, world_copy))
         .collect::<Vec<_>>();
     let Some(&first) = ring.first() else { return };
     ring.push(first);
-    let Some(rows) = visible_rows(&[ring.as_slice()], width, height) else {
+    let Some(rows) = visible_rows(&[ring.as_slice()], viewport.width, viewport.height) else {
         return;
     };
     for y in rows {
@@ -342,9 +321,9 @@ fn fill_geographic_country(
         intersections.sort_by(f64::total_cmp);
         for pair in intersections.chunks_exact(2) {
             let start = pair[0].floor().max(0.0) as usize;
-            let end = pair[1].ceil().min(width as f64) as usize;
+            let end = pair[1].ceil().min(viewport.width as f64) as usize;
             for x in start..end {
-                countries[y * width + x] = country;
+                countries[y * viewport.width + x] = country;
             }
         }
     }
@@ -352,35 +331,32 @@ fn fill_geographic_country(
 
 fn draw_geographic_path(
     dots: &mut [u8],
-    width: usize,
-    height: usize,
     points: &[(f64, f64)],
-    center_x: f64,
-    center_y: f64,
-    scale: f64,
+    viewport: Viewport,
+    world_copy: i32,
 ) {
     for edge in points.windows(2) {
-        let from = project_geographic_point(edge[0], width, height, center_x, center_y, scale);
-        let to = project_geographic_point(edge[1], width, height, center_x, center_y, scale);
-        draw_line(dots, width, height, from, to, BORDER);
+        let from = project_geographic_point(edge[0], viewport, world_copy);
+        let to = project_geographic_point(edge[1], viewport, world_copy);
+        draw_line(dots, viewport.width, viewport.height, from, to, BORDER);
     }
 }
 
 fn project_geographic_point(
     (longitude, latitude): (f64, f64),
-    width: usize,
-    height: usize,
-    center_x: f64,
-    center_y: f64,
-    scale: f64,
+    viewport: Viewport,
+    world_copy: i32,
 ) -> (i32, i32) {
     let world_x = (longitude + 180.0) / 360.0;
     let latitude = latitude.to_radians();
     let world_y =
         (1.0 - (latitude.tan() + latitude.cos().recip()).ln() / std::f64::consts::PI) / 2.0;
     (
-        (width as f64 / 2.0 + (world_x - center_x) * scale).round() as i32,
-        (height as f64 / 2.0 + (world_y - center_y) * scale).round() as i32,
+        (viewport.width as f64 / 2.0
+            + (world_x + f64::from(world_copy) - viewport.center_x) * viewport.scale)
+            .round() as i32,
+        (viewport.height as f64 / 2.0 + (world_y - viewport.center_y) * viewport.scale).round()
+            as i32,
     )
 }
 
@@ -447,13 +423,19 @@ fn read_points(bytes: &[u8], offset: &mut usize) -> Result<Vec<(f64, f64)>, Stri
     Ok(points)
 }
 
-fn draw_tile(dots: &mut [u8], tile: &Tile, position: TilePosition, viewport: Viewport) {
+fn draw_tile(
+    dots: &mut [u8],
+    tile: &Tile,
+    position: TilePosition,
+    viewport: Viewport,
+    world_copy: i32,
+) {
     for layer in &tile.layers {
         let extent = layer.extent.unwrap_or(4096);
         if layer.name == "water" {
             for feature in &layer.features {
                 let rings = mvt::decode_geometry(&feature.geometry);
-                fill_polygon(dots, extent, &rings, position, viewport);
+                fill_polygon(dots, extent, &rings, position, viewport, world_copy);
             }
         }
     }
@@ -469,7 +451,7 @@ fn draw_tile(dots: &mut [u8], tile: &Tile, position: TilePosition, viewport: Vie
                 continue;
             }
             for path in mvt::decode_geometry(&feature.geometry) {
-                let path = project_path(&path, extent, position, viewport);
+                let path = project_path(&path, extent, position, viewport, world_copy);
                 for edge in path.windows(2) {
                     draw_line(
                         dots,
@@ -491,10 +473,11 @@ fn fill_polygon(
     rings: &[Vec<(i32, i32)>],
     position: TilePosition,
     viewport: Viewport,
+    world_copy: i32,
 ) {
     let rings: Vec<_> = rings
         .iter()
-        .map(|ring| project_path(ring, extent, position, viewport))
+        .map(|ring| project_path(ring, extent, position, viewport, world_copy))
         .filter(|ring| ring.len() >= 3)
         .collect();
     let Some(rows) = visible_rows(&rings, viewport.width, viewport.height) else {
@@ -523,10 +506,11 @@ fn fill_country_polygon(
     country_id: u16,
     position: TilePosition,
     viewport: Viewport,
+    world_copy: i32,
 ) {
     let rings: Vec<_> = rings
         .iter()
-        .map(|ring| project_path(ring, extent, position, viewport))
+        .map(|ring| project_path(ring, extent, position, viewport, world_copy))
         .filter(|ring| ring.len() >= 3)
         .collect();
     let Some(rows) = visible_rows(&rings, viewport.width, viewport.height) else {
@@ -556,6 +540,7 @@ fn project_path(
     extent: u32,
     position: TilePosition,
     viewport: Viewport,
+    world_copy: i32,
 ) -> Vec<(i32, i32)> {
     let tiles = 2.0_f64.powi(position.zoom as i32);
     let extent = f64::from(extent);
@@ -564,13 +549,21 @@ fn project_path(
             let world_x = (f64::from(position.x) + f64::from(x) / extent) / tiles;
             let world_y = (f64::from(position.y) + f64::from(y) / extent) / tiles;
             (
-                (viewport.width as f64 / 2.0 + (world_x - viewport.center_x) * viewport.scale)
+                (viewport.width as f64 / 2.0
+                    + (world_x + f64::from(world_copy) - viewport.center_x) * viewport.scale)
                     .round() as i32,
                 (viewport.height as f64 / 2.0 + (world_y - viewport.center_y) * viewport.scale)
                     .round() as i32,
             )
         })
         .collect()
+}
+
+fn world_copies(viewport: Viewport) -> std::ops::RangeInclusive<i32> {
+    let half_width = viewport.width as f64 / (2.0 * viewport.scale);
+    let first = (viewport.center_x - half_width - 1.0).ceil() as i32;
+    let last = (viewport.center_x + half_width).floor() as i32;
+    first..=last
 }
 
 fn visible_rows(
