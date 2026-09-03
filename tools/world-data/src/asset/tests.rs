@@ -1,5 +1,5 @@
-use super::{DecodedAsset, braille_glyph, decode, encode, preview_braille_mask, render_preview};
-use crate::raster::{HEIGHT, NEUTRAL_LAND, WATER, WIDTH};
+use super::{decode, encode, render_tile_dots};
+use crate::raster::{HEIGHT, WIDTH};
 use std::path::Path;
 
 fn empty_proximity(country_count: usize) -> (Vec<u16>, Vec<bool>) {
@@ -33,59 +33,30 @@ fn encodes_the_expected_header_size() {
 }
 
 #[test]
-fn renders_a_colored_responsive_unicode_preview() {
-    let decoded = DecodedAsset {
-        width: 4,
-        height: 2,
-        country_count: 1,
-        cells: vec![WATER, NEUTRAL_LAND, 0, 0, WATER, NEUTRAL_LAND, 0, 0],
-        borders: vec![0, 0, 1, 0, 0, 0, 0, 0],
-        distances_km: vec![0],
-        adjacency: vec![false],
-    };
-    let color = render_preview(&decoded, 8, 3, true);
+fn renders_a_colored_unicode_preview() {
+    let dots = vec![1, 1, 2, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0];
+    let color = render_tile_dots(&dots, 4, 2, 1, true);
     assert!(
         color
             .chars()
             .any(|glyph| (0x2800..=0x28ff).contains(&u32::from(glyph)))
     );
     assert!(color.contains("\x1b[38;2;"));
-    assert_eq!(color.lines().count(), 2);
-    let monochrome = render_preview(&decoded, 8, 3, false);
-    assert!(monochrome.contains('░'));
+    assert_eq!(color.lines().count(), 1);
+    let monochrome = render_tile_dots(&dots, 4, 2, 1, false);
+    assert!(
+        monochrome
+            .chars()
+            .any(|glyph| (0x2800..=0x28ff).contains(&u32::from(glyph)))
+    );
     assert!(!monochrome.contains("\x1b["));
 }
 
 #[test]
-fn encodes_border_samples_as_braille_dots() {
-    let decoded = DecodedAsset {
-        width: 2,
-        height: 4,
-        country_count: 1,
-        cells: vec![0; 8],
-        borders: vec![1, 0, 0, 0, 0, 0, 0, 1],
-        distances_km: vec![0],
-        adjacency: vec![false],
-    };
+fn renders_water_and_boundaries_as_braille_dots() {
+    let dots = vec![0, 2, 0, 0, 0, 0, 0, 2];
 
-    let mask = preview_braille_mask(&decoded, 0, 0, 1, 1);
-    assert_eq!(mask, 0x81);
-    assert_eq!(u32::from(braille_glyph(mask)), 0x2881);
-}
-
-#[test]
-fn renders_both_halves_in_monochrome() {
-    let decoded = DecodedAsset {
-        width: 1,
-        height: 2,
-        country_count: 1,
-        cells: vec![WATER, 0],
-        borders: vec![0, 0],
-        distances_km: vec![0],
-        adjacency: vec![false],
-    };
-
-    assert_eq!(render_preview(&decoded, 2, 2, false), "▄\n");
+    assert_eq!(render_tile_dots(&dots, 2, 1, 1, false), "⢈\n");
 }
 
 #[test]
