@@ -67,7 +67,7 @@ jobs:
           if [ -n "$tag_commit" ]; then
             test "$tag_commit" = "$head_commit"
           else
-            git tag -a "$TAG" -m "WorldHunt $TAG"
+            git tag "$TAG"
             git push origin "$TAG"
           fi
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "WorldHunt $TAG" --generate-notes
