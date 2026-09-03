@@ -25,6 +25,7 @@ use super::{
 
 const MINIMUM_WIDTH: u16 = 48;
 const MINIMUM_HEIGHT: u16 = 20;
+const SUGGESTION_LIMIT: usize = 5;
 
 pub(super) struct TuiApp<'a, Catalog, ProximityPort, Selector> {
     catalog: &'a Catalog,
@@ -362,7 +363,12 @@ where
     }
 
     fn suggestions(&self) -> Vec<crate::domain::ports::CountrySuggestion> {
-        self.catalog.suggestions(&GuessInput::new(&self.input), 5)
+        self.catalog
+            .suggestions(&GuessInput::new(&self.input), self.catalog.playable().len())
+            .into_iter()
+            .filter(|suggestion| !self.game.has_guessed(suggestion.country))
+            .take(SUGGESTION_LIMIT)
+            .collect()
     }
 
     fn visible_suggestions(

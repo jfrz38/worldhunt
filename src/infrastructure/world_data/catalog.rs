@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde::Deserialize;
 use unicode_normalization::{UnicodeNormalization, char::is_combining_mark};
@@ -89,17 +89,23 @@ impl CountryCatalog for RuntimeCountryCatalog {
         let mut matches = self
             .search_names
             .iter()
-            .filter(|(name, _, _, _)| name.starts_with(&query))
-            .map(|(_, _, country, canonical)| (*country, *canonical))
+            .filter_map(|(name, _, country, canonical)| {
+                word_match_index(name, &query).map(|word_index| (*country, *canonical, word_index))
+            })
             .collect::<Vec<_>>();
-        matches.sort_unstable_by(|(left, left_canonical), (right, right_canonical)| {
-            right_canonical
-                .cmp(left_canonical)
-                .then_with(|| self.name(*left).cmp(&self.name(*right)))
-        });
-        matches.dedup_by_key(|(country, _)| *country);
+        matches.sort_unstable_by(
+            |(left, left_canonical, left_word), (right, right_canonical, right_word)| {
+                left_word
+                    .cmp(right_word)
+                    .then_with(|| right_canonical.cmp(left_canonical))
+                    .then_with(|| self.name(*left).cmp(&self.name(*right)))
+            },
+        );
         matches
             .into_iter()
+            .scan(HashSet::new(), |seen, (country, _, word_index)| {
+                seen.insert(country).then_some((country, word_index))
+            })
             .take(limit)
             .map(|(country, _)| country)
             .collect()
@@ -107,13 +113,14 @@ impl CountryCatalog for RuntimeCountryCatalog {
 
     fn suggestions(&self, input: &GuessInput, limit: usize) -> Vec<CountrySuggestion> {
         let query = normalize_name(input.as_str());
-        self.search(input, limit)
+        self.search(input, self.search_names.len())
             .into_iter()
             .filter_map(|country| {
                 self.search_names
                     .iter()
                     .filter(|(normalized, _, matched_country, _)| {
-                        *matched_country == country && normalized.starts_with(&query)
+                        *matched_country == country
+                            && word_match_index(normalized, &query).is_some()
                     })
                     .min_by(
                         |(_, left, _, left_canonical), (_, right, _, right_canonical)| {
@@ -129,6 +136,7 @@ impl CountryCatalog for RuntimeCountryCatalog {
                         completion: completion.clone(),
                     })
             })
+            .take(limit)
             .collect()
     }
 
@@ -155,6 +163,15 @@ fn normalize_name(name: &str) -> String {
         }
     }
     normalized
+}
+
+fn word_match_index(name: &str, query: &str) -> Option<usize> {
+    if name.starts_with(query) {
+        return Some(0);
+    }
+    name.split_whitespace()
+        .enumerate()
+        .find_map(|(index, word)| word.starts_with(query).then_some(index))
 }
 
 #[cfg(test)]
