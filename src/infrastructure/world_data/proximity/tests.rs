@@ -1,0 +1,31 @@
+use super::{ProximityData, ProximityRecord};
+
+#[test]
+fn looks_up_a_symmetric_adjacent_pair() {
+    let proximity = ProximityData::new(2, vec![0, 0, 0, 0], vec![false, true, true, false])
+        .expect("valid proximity data");
+
+    assert_eq!(
+        proximity.between(0, 1),
+        Some(ProximityRecord {
+            distance_km: 0,
+            adjacent: true,
+        })
+    );
+    assert_eq!(proximity.between(2, 0), None);
+}
+
+#[test]
+fn rejects_invalid_matrix_invariants() {
+    let invalid_matrices = [
+        (vec![0, 1, 0, 0], vec![false; 4]),
+        (vec![0; 4], vec![true, false, false, false]),
+        (vec![0, 0, 0, 1], vec![false; 4]),
+        (vec![0, 1, 1, 0], vec![false, true, true, false]),
+        (vec![0; 3], vec![false; 4]),
+    ];
+
+    for (distances, adjacency) in invalid_matrices {
+        assert!(ProximityData::new(2, distances, adjacency).is_err());
+    }
+}

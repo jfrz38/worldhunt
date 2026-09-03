@@ -1,0 +1,1769 @@
+# Authoritative playable-country catalog. Order is stable and becomes CountryId order.
+
+[[countries]]
+iso3 = "AFG"
+name = "Afghanistan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "AFG"
+name = "Afghanistan"
+
+[[countries]]
+iso3 = "AGO"
+name = "Angola"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "AGO"
+name = "Angola"
+
+[[countries]]
+iso3 = "ALB"
+name = "Albania"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ALB"
+name = "Albania"
+
+[[countries]]
+iso3 = "AND"
+name = "Andorra"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "AND"
+name = "Andorra"
+
+[[countries]]
+iso3 = "ARE"
+name = "United Arab Emirates"
+aliases = ["UAE"]
+
+[[countries.source_records]]
+iso3 = "ARE"
+name = "United Arab Emirates"
+
+[[countries]]
+iso3 = "ARG"
+name = "Argentina"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ARG"
+name = "Argentina"
+
+[[countries]]
+iso3 = "ARM"
+name = "Armenia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ARM"
+name = "Armenia"
+
+[[countries]]
+iso3 = "ATG"
+name = "Antigua & Barbuda"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ATG"
+name = "Antigua & Barbuda"
+
+[[countries]]
+iso3 = "AUS"
+name = "Australia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "AUS"
+name = "Australia"
+
+[[countries]]
+iso3 = "AUT"
+name = "Austria"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "AUT"
+name = "Austria"
+
+[[countries]]
+iso3 = "AZE"
+name = "Azerbaijan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "AZE"
+name = "Azerbaijan"
+
+[[countries]]
+iso3 = "BDI"
+name = "Burundi"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BDI"
+name = "Burundi"
+
+[[countries]]
+iso3 = "BEL"
+name = "Belgium"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BEL"
+name = "Belgium"
+
+[[countries]]
+iso3 = "BEN"
+name = "Benin"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BEN"
+name = "Benin"
+
+[[countries]]
+iso3 = "BFA"
+name = "Burkina Faso"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BFA"
+name = "Burkina Faso"
+
+[[countries]]
+iso3 = "BGD"
+name = "Bangladesh"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BGD"
+name = "Bangladesh"
+
+[[countries]]
+iso3 = "BGR"
+name = "Bulgaria"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BGR"
+name = "Bulgaria"
+
+[[countries]]
+iso3 = "BHR"
+name = "Bahrain"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BHR"
+name = "Bahrain"
+
+[[countries]]
+iso3 = "BHS"
+name = "Bahamas"
+aliases = ["The Bahamas"]
+
+[[countries.source_records]]
+iso3 = "BHS"
+name = "Bahamas"
+
+[[countries]]
+iso3 = "BIH"
+name = "Bosnia & Herzegovina"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BIH"
+name = "Bosnia & Herzegovina"
+
+[[countries]]
+iso3 = "BLR"
+name = "Belarus"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BLR"
+name = "Belarus"
+
+[[countries]]
+iso3 = "BLZ"
+name = "Belize"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BLZ"
+name = "Belize"
+
+[[countries]]
+iso3 = "BOL"
+name = "Bolivia"
+aliases = ["Bolivia (Plurinational State of)"]
+
+[[countries.source_records]]
+iso3 = "BOL"
+name = "Bolivia"
+
+[[countries]]
+iso3 = "BRA"
+name = "Brazil"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BRA"
+name = "Brazil"
+
+[[countries]]
+iso3 = "BRB"
+name = "Barbados"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BRB"
+name = "Barbados"
+
+[[countries]]
+iso3 = "BRN"
+name = "Brunei Darussalam"
+aliases = ["Brunei","Brunei Darussalam"]
+
+[[countries.source_records]]
+iso3 = "BRN"
+name = "Brunei Darussalam"
+
+[[countries]]
+iso3 = "BTN"
+name = "Bhutan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BTN"
+name = "Bhutan"
+
+[[countries]]
+iso3 = "BWA"
+name = "Botswana"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "BWA"
+name = "Botswana"
+
+[[countries]]
+iso3 = "CAF"
+name = "Central African Republic"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "CAF"
+name = "Central African Republic"
+
+[[countries]]
+iso3 = "CAN"
+name = "Canada"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "CAN"
+name = "Canada"
+
+[[countries]]
+iso3 = "CHE"
+name = "Switzerland"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "CHE"
+name = "Switzerland"
+
+[[countries]]
+iso3 = "CHL"
+name = "Chile"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "CHL"
+name = "Chile"
+
+[[countries]]
+iso3 = "CHN"
+name = "China"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "CHN"
+name = "China"
+
+[[countries]]
+iso3 = "CIV"
+name = "Côte d'Ivoire"
+aliases = ["Ivory Coast","Cote d'Ivoire"]
+
+[[countries.source_records]]
+iso3 = "CIV"
+name = "Côte d'Ivoire"
+
+[[countries]]
+iso3 = "CMR"
+name = "Cameroon"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "CMR"
+name = "Cameroon"
+
+[[countries]]
+iso3 = "COD"
+name = "Democratic Republic of the Congo"
+aliases = ["Democratic Republic of the Congo","DR Congo","Congo-Kinshasa"]
+
+[[countries.source_records]]
+iso3 = "COD"
+name = "Democratic Republic of the Congo"
+
+[[countries]]
+iso3 = "COG"
+name = "Congo"
+aliases = ["Republic of the Congo","Congo-Brazzaville"]
+
+[[countries.source_records]]
+iso3 = "COG"
+name = "Congo"
+
+[[countries]]
+iso3 = "COL"
+name = "Colombia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "COL"
+name = "Colombia"
+
+[[countries]]
+iso3 = "COM"
+name = "Comoros"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "COM"
+name = "Comoros"
+
+[[countries]]
+iso3 = "CPV"
+name = "Cape Verde"
+aliases = ["Cape Verde","Cabo Verde"]
+
+[[countries.source_records]]
+iso3 = "CPV"
+name = "Cape Verde"
+
+[[countries]]
+iso3 = "CRI"
+name = "Costa Rica"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "CRI"
+name = "Costa Rica"
+
+[[countries]]
+iso3 = "CUB"
+name = "Cuba"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "CUB"
+name = "Cuba"
+
+[[countries]]
+iso3 = "CYP"
+name = "Cyprus"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "CYP"
+name = "Cyprus"
+
+[[countries]]
+iso3 = "CZE"
+name = "Czech Republic"
+aliases = ["Czech Republic"]
+
+[[countries.source_records]]
+iso3 = "CZE"
+name = "Czech Republic"
+
+[[countries]]
+iso3 = "DEU"
+name = "Germany"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "DEU"
+name = "Germany"
+
+[[countries]]
+iso3 = "DJI"
+name = "Djibouti"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "DJI"
+name = "Djibouti"
+
+[[countries]]
+iso3 = "DMA"
+name = "Dominica"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "DMA"
+name = "Dominica"
+
+[[countries]]
+iso3 = "DNK"
+name = "Denmark"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "DNK"
+name = "Denmark"
+
+[[countries]]
+iso3 = "DOM"
+name = "Dominican Republic"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "DOM"
+name = "Dominican Republic"
+
+[[countries]]
+iso3 = "DZA"
+name = "Algeria"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "DZA"
+name = "Algeria"
+
+[[countries]]
+iso3 = "ECU"
+name = "Ecuador"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ECU"
+name = "Ecuador"
+
+[[countries]]
+iso3 = "EGY"
+name = "Egypt"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "EGY"
+name = "Egypt"
+
+[[countries]]
+iso3 = "ERI"
+name = "Eritrea"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ERI"
+name = "Eritrea"
+
+[[countries]]
+iso3 = "ESP"
+name = "Spain"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ESP"
+name = "Spain"
+
+[[countries]]
+iso3 = "EST"
+name = "Estonia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "EST"
+name = "Estonia"
+
+[[countries]]
+iso3 = "ETH"
+name = "Ethiopia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ETH"
+name = "Ethiopia"
+
+[[countries]]
+iso3 = "FIN"
+name = "Finland"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "FIN"
+name = "Finland"
+
+[[countries]]
+iso3 = "FJI"
+name = "Fiji"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "FJI"
+name = "Fiji"
+
+[[countries]]
+iso3 = "FRA"
+name = "France"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "FRA"
+name = "France"
+
+[[countries]]
+iso3 = "FSM"
+name = "Micronesia (Federated States of)"
+aliases = ["Micronesia","Federated States of Micronesia"]
+
+[[countries.source_records]]
+iso3 = "FSM"
+name = "Micronesia (Federated States of)"
+
+[[countries]]
+iso3 = "GAB"
+name = "Gabon"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "GAB"
+name = "Gabon"
+
+[[countries]]
+iso3 = "GBR"
+name = "U.K. of Great Britain and Northern Ireland"
+aliases = ["United Kingdom","UK","Great Britain"]
+
+[[countries.source_records]]
+iso3 = "GBR"
+name = "U.K. of Great Britain and Northern Ireland"
+
+[[countries]]
+iso3 = "GEO"
+name = "Georgia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "GEO"
+name = "Georgia"
+
+[[countries]]
+iso3 = "GHA"
+name = "Ghana"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "GHA"
+name = "Ghana"
+
+[[countries]]
+iso3 = "GIN"
+name = "Guinea"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "GIN"
+name = "Guinea"
+
+[[countries]]
+iso3 = "GMB"
+name = "Gambia"
+aliases = ["The Gambia"]
+
+[[countries.source_records]]
+iso3 = "GMB"
+name = "Gambia"
+
+[[countries]]
+iso3 = "GNB"
+name = "Guinea-Bissau"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "GNB"
+name = "Guinea-Bissau"
+
+[[countries]]
+iso3 = "GNQ"
+name = "Equatorial Guinea"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "GNQ"
+name = "Equatorial Guinea"
+
+[[countries]]
+iso3 = "GRC"
+name = "Greece"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "GRC"
+name = "Greece"
+
+[[countries]]
+iso3 = "GRD"
+name = "Grenada"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "GRD"
+name = "Grenada"
+
+[[countries]]
+iso3 = "GTM"
+name = "Guatemala"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "GTM"
+name = "Guatemala"
+
+[[countries]]
+iso3 = "GUY"
+name = "Guyana"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "GUY"
+name = "Guyana"
+
+[[countries]]
+iso3 = "HND"
+name = "Honduras"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "HND"
+name = "Honduras"
+
+[[countries]]
+iso3 = "HRV"
+name = "Croatia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "HRV"
+name = "Croatia"
+
+[[countries]]
+iso3 = "HTI"
+name = "Haiti"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "HTI"
+name = "Haiti"
+
+[[countries]]
+iso3 = "HUN"
+name = "Hungary"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "HUN"
+name = "Hungary"
+
+[[countries]]
+iso3 = "IDN"
+name = "Indonesia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "IDN"
+name = "Indonesia"
+
+[[countries]]
+iso3 = "IND"
+name = "India"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "IND"
+name = "India"
+
+[[countries]]
+iso3 = "IRL"
+name = "Ireland"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "IRL"
+name = "Ireland"
+
+[[countries]]
+iso3 = "IRN"
+name = "Iran (Islamic Republic of)"
+aliases = ["Iran","Islamic Republic of Iran"]
+
+[[countries.source_records]]
+iso3 = "IRN"
+name = "Iran (Islamic Republic of)"
+
+[[countries]]
+iso3 = "IRQ"
+name = "Iraq"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "IRQ"
+name = "Iraq"
+
+[[countries]]
+iso3 = "ISL"
+name = "Iceland"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ISL"
+name = "Iceland"
+
+[[countries]]
+iso3 = "ISR"
+name = "Israel"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ISR"
+name = "Israel"
+
+[[countries]]
+iso3 = "ITA"
+name = "Italy"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ITA"
+name = "Italy"
+
+[[countries]]
+iso3 = "JAM"
+name = "Jamaica"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "JAM"
+name = "Jamaica"
+
+[[countries]]
+iso3 = "JOR"
+name = "Jordan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "JOR"
+name = "Jordan"
+
+[[countries]]
+iso3 = "JPN"
+name = "Japan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "JPN"
+name = "Japan"
+
+[[countries]]
+iso3 = "KAZ"
+name = "Kazakhstan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "KAZ"
+name = "Kazakhstan"
+
+[[countries]]
+iso3 = "KEN"
+name = "Kenya"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "KEN"
+name = "Kenya"
+
+[[countries]]
+iso3 = "KGZ"
+name = "Kyrgyzstan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "KGZ"
+name = "Kyrgyzstan"
+
+[[countries]]
+iso3 = "KHM"
+name = "Cambodia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "KHM"
+name = "Cambodia"
+
+[[countries]]
+iso3 = "KIR"
+name = "Kiribati"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "KIR"
+name = "Kiribati"
+
+[[countries]]
+iso3 = "KNA"
+name = "Saint Kitts and Nevis"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "KNA"
+name = "Saint Kitts and Nevis"
+
+[[countries]]
+iso3 = "KOR"
+name = "Republic of Korea"
+aliases = ["South Korea","Republic of Korea"]
+
+[[countries.source_records]]
+iso3 = "KOR"
+name = "Republic of Korea"
+
+[[countries]]
+iso3 = "KWT"
+name = "Kuwait"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "KWT"
+name = "Kuwait"
+
+[[countries]]
+iso3 = "LAO"
+name = "Lao People's Democratic Republic"
+aliases = ["Laos","Lao People's Democratic Republic"]
+
+[[countries.source_records]]
+iso3 = "LAO"
+name = "Lao People's Democratic Republic"
+
+[[countries]]
+iso3 = "LBN"
+name = "Lebanon"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "LBN"
+name = "Lebanon"
+
+[[countries]]
+iso3 = "LBR"
+name = "Liberia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "LBR"
+name = "Liberia"
+
+[[countries]]
+iso3 = "LBY"
+name = "Libya"
+aliases = ["Libyan Arab Jamahiriya"]
+
+[[countries.source_records]]
+iso3 = "LBY"
+name = "Libyan Arab Jamahiriya"
+
+[[countries]]
+iso3 = "LCA"
+name = "Saint Lucia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "LCA"
+name = "Saint Lucia"
+
+[[countries]]
+iso3 = "LIE"
+name = "Liechtenstein"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "LIE"
+name = "Liechtenstein"
+
+[[countries]]
+iso3 = "LKA"
+name = "Sri Lanka"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "LKA"
+name = "Sri Lanka"
+
+[[countries]]
+iso3 = "LSO"
+name = "Lesotho"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "LSO"
+name = "Lesotho"
+
+[[countries]]
+iso3 = "LTU"
+name = "Lithuania"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "LTU"
+name = "Lithuania"
+
+[[countries]]
+iso3 = "LUX"
+name = "Luxembourg"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "LUX"
+name = "Luxembourg"
+
+[[countries]]
+iso3 = "LVA"
+name = "Latvia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "LVA"
+name = "Latvia"
+
+[[countries]]
+iso3 = "MAR"
+name = "Morocco"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MAR"
+name = "Morocco"
+
+[[countries]]
+iso3 = "MCO"
+name = "Monaco"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MCO"
+name = "Monaco"
+
+[[countries]]
+iso3 = "MDA"
+name = "Moldova, Republic of"
+aliases = ["Moldova","Republic of Moldova"]
+
+[[countries.source_records]]
+iso3 = "MDA"
+name = "Moldova, Republic of"
+
+[[countries]]
+iso3 = "MDG"
+name = "Madagascar"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MDG"
+name = "Madagascar"
+
+[[countries]]
+iso3 = "MDV"
+name = "Maldives"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MDV"
+name = "Maldives"
+
+[[countries]]
+iso3 = "MEX"
+name = "Mexico"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MEX"
+name = "Mexico"
+
+[[countries]]
+iso3 = "MHL"
+name = "Marshall Islands"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MHL"
+name = "Marshall Islands"
+
+[[countries]]
+iso3 = "MKD"
+name = "The former Yugoslav Republic of Macedonia"
+aliases = ["North Macedonia","Republic of North Macedonia"]
+
+[[countries.source_records]]
+iso3 = "MKD"
+name = "The former Yugoslav Republic of Macedonia"
+
+[[countries]]
+iso3 = "MLI"
+name = "Mali"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MLI"
+name = "Mali"
+
+[[countries]]
+iso3 = "MLT"
+name = "Malta"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MLT"
+name = "Malta"
+
+[[countries]]
+iso3 = "MMR"
+name = "Myanmar"
+aliases = ["Myanmar","Burma"]
+
+[[countries.source_records]]
+iso3 = "MMR"
+name = "Myanmar"
+
+[[countries]]
+iso3 = "MNE"
+name = "Montenegro"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MNE"
+name = "Montenegro"
+
+[[countries]]
+iso3 = "MNG"
+name = "Mongolia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MNG"
+name = "Mongolia"
+
+[[countries]]
+iso3 = "MOZ"
+name = "Mozambique"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MOZ"
+name = "Mozambique"
+
+[[countries]]
+iso3 = "MRT"
+name = "Mauritania"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MRT"
+name = "Mauritania"
+
+[[countries]]
+iso3 = "MUS"
+name = "Mauritius"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MUS"
+name = "Mauritius"
+
+[[countries]]
+iso3 = "MWI"
+name = "Malawi"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MWI"
+name = "Malawi"
+
+[[countries]]
+iso3 = "MYS"
+name = "Malaysia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "MYS"
+name = "Malaysia"
+
+[[countries]]
+iso3 = "NAM"
+name = "Namibia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "NAM"
+name = "Namibia"
+
+[[countries]]
+iso3 = "NER"
+name = "Niger"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "NER"
+name = "Niger"
+
+[[countries]]
+iso3 = "NGA"
+name = "Nigeria"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "NGA"
+name = "Nigeria"
+
+[[countries]]
+iso3 = "NIC"
+name = "Nicaragua"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "NIC"
+name = "Nicaragua"
+
+[[countries]]
+iso3 = "NLD"
+name = "Netherlands"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "NLD"
+name = "Netherlands"
+
+[[countries]]
+iso3 = "NOR"
+name = "Norway"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "NOR"
+name = "Norway"
+
+[[countries]]
+iso3 = "NPL"
+name = "Nepal"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "NPL"
+name = "Nepal"
+
+[[countries]]
+iso3 = "NRU"
+name = "Nauru"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "NRU"
+name = "Nauru"
+
+[[countries]]
+iso3 = "NZL"
+name = "New Zealand"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "NZL"
+name = "New Zealand"
+
+[[countries]]
+iso3 = "OMN"
+name = "Oman"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "OMN"
+name = "Oman"
+
+[[countries]]
+iso3 = "PAK"
+name = "Pakistan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "PAK"
+name = "Pakistan"
+
+[[countries]]
+iso3 = "PAN"
+name = "Panama"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "PAN"
+name = "Panama"
+
+[[countries]]
+iso3 = "PER"
+name = "Peru"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "PER"
+name = "Peru"
+
+[[countries]]
+iso3 = "PHL"
+name = "Philippines"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "PHL"
+name = "Philippines"
+
+[[countries]]
+iso3 = "PLW"
+name = "Palau"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "PLW"
+name = "Palau"
+
+[[countries]]
+iso3 = "PNG"
+name = "Papua New Guinea"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "PNG"
+name = "Papua New Guinea"
+
+[[countries]]
+iso3 = "POL"
+name = "Poland"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "POL"
+name = "Poland"
+
+[[countries]]
+iso3 = "PRK"
+name = "Democratic People's Republic of Korea"
+aliases = ["North Korea","Democratic People's Republic of Korea"]
+
+[[countries.source_records]]
+iso3 = "PRK"
+name = "Democratic People's Republic of Korea"
+
+[[countries]]
+iso3 = "PRT"
+name = "Portugal"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "PRT"
+name = "Portugal"
+
+[[countries]]
+iso3 = "PRY"
+name = "Paraguay"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "PRY"
+name = "Paraguay"
+
+[[countries]]
+iso3 = "QAT"
+name = "Qatar"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "QAT"
+name = "Qatar"
+
+[[countries]]
+iso3 = "ROU"
+name = "Romania"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ROU"
+name = "Romania"
+
+[[countries]]
+iso3 = "RUS"
+name = "Russian Federation"
+aliases = ["Russia","Russian Federation"]
+
+[[countries.source_records]]
+iso3 = "RUS"
+name = "Russian Federation"
+
+[[countries]]
+iso3 = "RWA"
+name = "Rwanda"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "RWA"
+name = "Rwanda"
+
+[[countries]]
+iso3 = "SAU"
+name = "Saudi Arabia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SAU"
+name = "Saudi Arabia"
+
+[[countries]]
+iso3 = "SDN"
+name = "Sudan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SDN"
+name = "Sudan"
+
+[[countries]]
+iso3 = "SEN"
+name = "Senegal"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SEN"
+name = "Senegal"
+
+[[countries]]
+iso3 = "SGP"
+name = "Singapore"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SGP"
+name = "Singapore"
+
+[[countries]]
+iso3 = "SLB"
+name = "Solomon Islands"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SLB"
+name = "Solomon Islands"
+
+[[countries]]
+iso3 = "SLE"
+name = "Sierra Leone"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SLE"
+name = "Sierra Leone"
+
+[[countries]]
+iso3 = "SLV"
+name = "El Salvador"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SLV"
+name = "El Salvador"
+
+[[countries]]
+iso3 = "SMR"
+name = "San Marino"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SMR"
+name = "San Marino"
+
+[[countries]]
+iso3 = "SOM"
+name = "Somalia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SOM"
+name = "Somalia"
+
+[[countries]]
+iso3 = "SRB"
+name = "Serbia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SRB"
+name = "Serbia"
+
+[[countries]]
+iso3 = "SSD"
+name = "South Sudan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SSD"
+name = "South Sudan"
+
+[[countries]]
+iso3 = "STP"
+name = "Sao Tome and Principe"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "STP"
+name = "Sao Tome and Principe"
+
+[[countries]]
+iso3 = "SUR"
+name = "Suriname"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SUR"
+name = "Suriname"
+
+[[countries]]
+iso3 = "SVK"
+name = "Slovakia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SVK"
+name = "Slovakia"
+
+[[countries]]
+iso3 = "SVN"
+name = "Slovenia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SVN"
+name = "Slovenia"
+
+[[countries]]
+iso3 = "SWE"
+name = "Sweden"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SWE"
+name = "Sweden"
+
+[[countries]]
+iso3 = "SWZ"
+name = "Swaziland"
+aliases = ["Eswatini","Swaziland"]
+
+[[countries.source_records]]
+iso3 = "SWZ"
+name = "Swaziland"
+
+[[countries]]
+iso3 = "SYC"
+name = "Seychelles"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "SYC"
+name = "Seychelles"
+
+[[countries]]
+iso3 = "SYR"
+name = "Syrian Arab Republic"
+aliases = ["Syria","Syrian Arab Republic"]
+
+[[countries.source_records]]
+iso3 = "SYR"
+name = "Syrian Arab Republic"
+
+[[countries]]
+iso3 = "TCD"
+name = "Chad"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "TCD"
+name = "Chad"
+
+[[countries]]
+iso3 = "TGO"
+name = "Togo"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "TGO"
+name = "Togo"
+
+[[countries]]
+iso3 = "THA"
+name = "Thailand"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "THA"
+name = "Thailand"
+
+[[countries]]
+iso3 = "TJK"
+name = "Tajikistan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "TJK"
+name = "Tajikistan"
+
+[[countries]]
+iso3 = "TKM"
+name = "Turkmenistan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "TKM"
+name = "Turkmenistan"
+
+[[countries]]
+iso3 = "TLS"
+name = "Timor-Leste"
+aliases = ["East Timor","Timor-Leste"]
+
+[[countries.source_records]]
+iso3 = "TLS"
+name = "Timor-Leste"
+
+[[countries]]
+iso3 = "TON"
+name = "Tonga"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "TON"
+name = "Tonga"
+
+[[countries]]
+iso3 = "TTO"
+name = "Trinidad and Tobago"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "TTO"
+name = "Trinidad and Tobago"
+
+[[countries]]
+iso3 = "TUN"
+name = "Tunisia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "TUN"
+name = "Tunisia"
+
+[[countries]]
+iso3 = "TUR"
+name = "Turkey"
+aliases = ["Turkey","Türkiye"]
+
+[[countries.source_records]]
+iso3 = "TUR"
+name = "Turkey"
+
+[[countries]]
+iso3 = "TUV"
+name = "Tuvalu"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "TUV"
+name = "Tuvalu"
+
+[[countries]]
+iso3 = "TZA"
+name = "United Republic of Tanzania"
+aliases = ["Tanzania","United Republic of Tanzania"]
+
+[[countries.source_records]]
+iso3 = "TZA"
+name = "United Republic of Tanzania"
+
+[[countries]]
+iso3 = "UGA"
+name = "Uganda"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "UGA"
+name = "Uganda"
+
+[[countries]]
+iso3 = "UKR"
+name = "Ukraine"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "UKR"
+name = "Ukraine"
+
+[[countries]]
+iso3 = "URY"
+name = "Uruguay"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "URY"
+name = "Uruguay"
+
+[[countries]]
+iso3 = "USA"
+name = "United States of America"
+aliases = ["United States","USA","US"]
+
+[[countries.source_records]]
+iso3 = "USA"
+name = "United States of America"
+
+[[countries]]
+iso3 = "UZB"
+name = "Uzbekistan"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "UZB"
+name = "Uzbekistan"
+
+[[countries]]
+iso3 = "VCT"
+name = "Saint Vincent and the Grenadines"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "VCT"
+name = "Saint Vincent and the Grenadines"
+
+[[countries]]
+iso3 = "VEN"
+name = "Venezuela"
+aliases = ["Venezuela","Venezuela (Bolivarian Republic of)"]
+
+[[countries.source_records]]
+iso3 = "VEN"
+name = "Venezuela"
+
+[[countries]]
+iso3 = "VNM"
+name = "Vietnam"
+aliases = ["Vietnam","Viet Nam"]
+
+[[countries.source_records]]
+iso3 = "VNM"
+name = "Vietnam"
+
+[[countries]]
+iso3 = "VUT"
+name = "Vanuatu"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "VUT"
+name = "Vanuatu"
+
+[[countries]]
+iso3 = "WSM"
+name = "Samoa"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "WSM"
+name = "Samoa"
+
+[[countries]]
+iso3 = "YEM"
+name = "Yemen"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "YEM"
+name = "Yemen"
+
+[[countries]]
+iso3 = "ZAF"
+name = "South Africa"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ZAF"
+name = "South Africa"
+
+[[countries]]
+iso3 = "ZMB"
+name = "Zambia"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ZMB"
+name = "Zambia"
+
+[[countries]]
+iso3 = "ZWE"
+name = "Zimbabwe"
+aliases = []
+
+[[countries.source_records]]
+iso3 = "ZWE"
+name = "Zimbabwe"
+
+[[countries]]
+iso3 = "PSE"
+name = "Palestine"
+aliases = ["State of Palestine"]
+
+[[countries.source_records]]
+iso3 = "PSE"
+name = "Gaza Strip"
+
+[[countries.source_records]]
+iso3 = "PSE"
+name = "West Bank"
+
+[[countries]]
+iso3 = "VAT"
+name = "Vatican City"
+aliases = ["Holy See"]
+
+[[countries.source_records]]
+iso3 = "VAT"
+name = "Holy See"
+
+[[countries]]
+iso3 = "ESH"
+name = "Western Sahara"
+aliases = ["Sahara Occidental"]
+
+[[countries.source_records]]
+iso3 = "ESH"
+name = "Western Sahara"

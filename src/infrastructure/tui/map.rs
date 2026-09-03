@@ -1,0 +1,811 @@
+use ratatui::{buffer::Buffer, layout::Rect, style::Style};
+
+use crate::domain::{CountryId, Guess};
+
+use super::{
+    layout,
+    mvt::{self, Tile},
+    theme::Theme,
+};
+
+mod countries;
+use countries::CountryOverlay;
+
+const BRAILLE_DOTS: [[u8; 2]; 4] = [[0x01, 0x08], [0x02, 0x10], [0x04, 0x20], [0x40, 0x80]];
+const WATER: u8 = 1;
+const BORDER: u8 = 2;
+const NORTH: f64 = 0.0307;
+const SOUTH: f64 = 0.6887;
+const NEUTRAL_LAND: u16 = u16::MAX - 1;
+const DETAIL_ZOOM: f64 = 0.5;
+const INITIAL_ZOOM: f64 = 1.0;
+const SPAIN_CENTER_X: f64 = 0.489_711_666_7;
+const SPAIN_CENTER_Y: f64 = 0.377_063_141_2;
+const OSM_ATTRIBUTION: &str = "OpenStreetMap contributors";
+
+#[derive(Clone, Copy)]
+struct Viewport {
+    width: usize,
+    height: usize,
+    center_x: f64,
+    center_y: f64,
+    scale: f64,
+}
+
+#[derive(Clone, Copy)]
+struct TilePosition {
+    x: u32,
+    y: u32,
+    zoom: u32,
+}
+
+pub(super) struct Map {
+    zoom: f64,
+    center_x: f64,
+    center_y: f64,
+    zoom_zero: Tile,
+    zoom_one: [Tile; 4],
+    countries: CountryOverlay,
+    details: MapDetails,
+}
+
+/// Immutable presentation data derived from the domain's accepted guesses.
+pub(super) struct MapState {
+    country_styles: Vec<Option<Style>>,
+}
+
+impl MapState {
+    pub(super) fn from_guesses(guesses: &[Guess], country_count: usize, theme: Theme) -> Self {
+        let mut country_styles = vec![None; country_count];
+        for guess in guesses {
+            if let Some(style) = country_styles.get_mut(usize::from(guess.country().value())) {
+                *style = Some(theme.guessed_land(guess.clue()));
+            }
+        }
+        Self { country_styles }
+    }
+}
+
+impl Map {
+    pub(super) fn load() -> Result<Self, String> {
+        Ok(Self {
+            zoom: INITIAL_ZOOM,
+            center_x: SPAIN_CENTER_X,
+            center_y: SPAIN_CENTER_Y,
+            zoom_zero: mvt::decode(include_bytes!(
+                "../../../data/source/openstreetmap/0_0_0.pbf.gz"
+            ))?,
+            zoom_one: [
+                mvt::decode(include_bytes!(
+                    "../../../data/source/openstreetmap/1_0_0.pbf.gz"
+                ))?,
+                mvt::decode(include_bytes!(
+                    "../../../data/source/openstreetmap/1_1_0.pbf.gz"
+                ))?,
+                mvt::decode(include_bytes!(
+                    "../../../data/source/openstreetmap/1_0_1.pbf.gz"
+                ))?,
+                mvt::decode(include_bytes!(
+                    "../../../data/source/openstreetmap/1_1_1.pbf.gz"
+                ))?,
+            ],
+            countries: CountryOverlay::load()?,
+            details: MapDetails::decode(include_bytes!("../../../assets/map-details-v1.bin"))?,
+        })
+    }
+
+    pub(super) fn zoom_in(&mut self) {
+        self.zoom = (self.zoom + 0.25).min(1.99);
+    }
+
+    pub(super) fn zoom_out(&mut self) {
+        self.zoom = (self.zoom - 0.25).max(0.0);
+    }
+
+    pub(super) fn pan(&mut self, horizontal: f64, vertical: f64) {
+        let step = 0.08 / 2.0_f64.powf(self.zoom);
+        self.center_x = (self.center_x + horizontal * step).rem_euclid(1.0);
+        self.center_y = (self.center_y + vertical * step).clamp(NORTH, SOUTH);
+    }
+
+    pub(super) fn center_on(&mut self, country: CountryId) -> bool {
+        let Some((center_x, center_y)) = self.countries.anchor(country.value()) else {
+            return false;
+        };
+        self.center_x = center_x;
+        self.center_y = center_y.clamp(NORTH, SOUTH);
+        true
+    }
+
+    #[cfg(test)]
+    pub(super) fn camera(&self) -> (f64, f64, f64) {
+        (self.center_x, self.center_y, self.zoom)
+    }
+
+    #[cfg(test)]
+    pub(super) fn render(&self, area: Rect, buffer: &mut Buffer) {
+        let theme = Theme::from_environment();
+        self.render_with_guesses(area, buffer, &[], theme);
+    }
+
+    pub(super) fn render_with_guesses(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        guesses: &[Guess],
+        theme: Theme,
+    ) {
+        let state = MapState::from_guesses(guesses, self.countries.country_count(), theme);
+        self.render_with_state(area, buffer, &state, theme);
+    }
+
+    fn render_with_state(&self, area: Rect, buffer: &mut Buffer, state: &MapState, theme: Theme) {
+        let Some(map_area) = layout::map_area(area) else {
+            render_resize_message(area, buffer);
+            return;
+        };
+        let columns = usize::from(map_area.width);
+        let rows = usize::from(map_area.height);
+        let dot_width = columns * 2;
+        let dot_height = rows * 4;
+        let mut dots = vec![0_u8; dot_width * dot_height];
+        let mut countries = vec![u16::MAX; dot_width * dot_height];
+        let scale =
+            (dot_width as f64).min(dot_height as f64 / (SOUTH - NORTH)) * 2.0_f64.powf(self.zoom);
+        let viewport = Viewport {
+            width: dot_width,
+            height: dot_height,
+            center_x: self.center_x,
+            center_y: self.center_y,
+            scale,
+        };
+
+        self.countries.draw(&mut countries, viewport, self.zoom);
+
+        for world_copy in world_copies(viewport) {
+            for (tile, tile_x, tile_y, zoom) in self.active_tiles() {
+                draw_tile(
+                    &mut dots,
+                    tile,
+                    TilePosition {
+                        x: tile_x,
+                        y: tile_y,
+                        zoom,
+                    },
+                    viewport,
+                    world_copy,
+                );
+            }
+        }
+        if self.zoom >= DETAIL_ZOOM {
+            self.details.draw(&mut dots, &mut countries, viewport);
+        }
+        render_dots(&dots, &countries, state, theme, dot_width, map_area, buffer);
+        self.render_anchors(
+            &visible_countries(
+                &countries,
+                dot_width,
+                rows,
+                columns,
+                self.countries.country_count(),
+            ),
+            state,
+            theme,
+            viewport,
+            map_area,
+            buffer,
+        );
+        render_status(area, buffer, self.zoom);
+    }
+
+    fn active_tiles(&self) -> Vec<(&Tile, u32, u32, u32)> {
+        if self.zoom < 1.0 {
+            vec![(&self.zoom_zero, 0, 0, 0)]
+        } else {
+            vec![
+                (&self.zoom_one[0], 0, 0, 1),
+                (&self.zoom_one[1], 1, 0, 1),
+                (&self.zoom_one[2], 0, 1, 1),
+                (&self.zoom_one[3], 1, 1, 1),
+            ]
+        }
+    }
+}
+
+struct MapDetails {
+    islands: Vec<DetailPolygon>,
+    western_sahara_border: Vec<(f64, f64)>,
+}
+
+struct DetailPolygon {
+    country: u16,
+    points: Vec<(f64, f64)>,
+}
+
+impl MapDetails {
+    fn decode(bytes: &[u8]) -> Result<Self, String> {
+        if bytes.get(..4) != Some(b"WHDL") || read_u16(bytes, 4)? != 2 {
+            return Err("map detail asset has an invalid header".to_owned());
+        }
+        let island_count = usize::from(read_u16(bytes, 6)?);
+        let mut offset = 8;
+        let mut islands = Vec::with_capacity(island_count);
+        for _ in 0..island_count {
+            islands.push(DetailPolygon {
+                country: read_u16(bytes, offset)?,
+                points: {
+                    offset += 2;
+                    read_points(bytes, &mut offset)?
+                },
+            });
+        }
+        let western_sahara_border = read_points(bytes, &mut offset)?;
+        if offset != bytes.len() || islands.len() != 7 || western_sahara_border.len() != 15 {
+            return Err("map detail asset has unexpected geometry".to_owned());
+        }
+        Ok(Self {
+            islands,
+            western_sahara_border,
+        })
+    }
+
+    fn draw(&self, dots: &mut [u8], countries: &mut [u16], viewport: Viewport) {
+        for world_copy in world_copies(viewport) {
+            for island in &self.islands {
+                fill_geographic_land(dots, &island.points, viewport, world_copy);
+                fill_geographic_country(
+                    countries,
+                    &island.points,
+                    island.country,
+                    viewport,
+                    world_copy,
+                );
+            }
+            draw_geographic_path(dots, &self.western_sahara_border, viewport, world_copy);
+        }
+    }
+}
+
+fn fill_geographic_land(
+    dots: &mut [u8],
+    polygon: &[(f64, f64)],
+    viewport: Viewport,
+    world_copy: i32,
+) {
+    let mut ring = polygon
+        .iter()
+        .copied()
+        .map(|point| project_geographic_point(point, viewport, world_copy))
+        .collect::<Vec<_>>();
+    let Some(&first) = ring.first() else { return };
+    ring.push(first);
+
+    let Some(rows) = visible_rows(&[ring.as_slice()], viewport.width, viewport.height) else {
+        return;
+    };
+    for y in rows {
+        let mut intersections = ring_intersections(&ring, y as f64 + 0.5);
+        intersections.sort_by(f64::total_cmp);
+        for pair in intersections.chunks_exact(2) {
+            let start = pair[0].floor().max(0.0) as usize;
+            let end = pair[1].ceil().min(viewport.width as f64) as usize;
+            for x in start..end {
+                clear_water(dots, viewport.width, x as i32, y as i32);
+            }
+        }
+    }
+    for edge in ring.windows(2) {
+        clear_water_line(dots, viewport.width, edge[0], edge[1]);
+    }
+}
+
+fn fill_geographic_country(
+    countries: &mut [u16],
+    polygon: &[(f64, f64)],
+    country: u16,
+    viewport: Viewport,
+    world_copy: i32,
+) {
+    let mut ring = polygon
+        .iter()
+        .copied()
+        .map(|point| project_geographic_point(point, viewport, world_copy))
+        .collect::<Vec<_>>();
+    let Some(&first) = ring.first() else { return };
+    ring.push(first);
+    let Some(rows) = visible_rows(&[ring.as_slice()], viewport.width, viewport.height) else {
+        return;
+    };
+    for y in rows {
+        let mut intersections = ring_intersections(&ring, y as f64 + 0.5);
+        intersections.sort_by(f64::total_cmp);
+        for pair in intersections.chunks_exact(2) {
+            let start = pair[0].floor().max(0.0) as usize;
+            let end = pair[1].ceil().min(viewport.width as f64) as usize;
+            for x in start..end {
+                countries[y * viewport.width + x] = country;
+            }
+        }
+    }
+}
+
+fn draw_geographic_path(
+    dots: &mut [u8],
+    points: &[(f64, f64)],
+    viewport: Viewport,
+    world_copy: i32,
+) {
+    for edge in points.windows(2) {
+        let from = project_geographic_point(edge[0], viewport, world_copy);
+        let to = project_geographic_point(edge[1], viewport, world_copy);
+        draw_line(dots, viewport.width, viewport.height, from, to, BORDER);
+    }
+}
+
+fn project_geographic_point(
+    (longitude, latitude): (f64, f64),
+    viewport: Viewport,
+    world_copy: i32,
+) -> (i32, i32) {
+    let world_x = (longitude + 180.0) / 360.0;
+    let latitude = latitude.to_radians();
+    let world_y =
+        (1.0 - (latitude.tan() + latitude.cos().recip()).ln() / std::f64::consts::PI) / 2.0;
+    (
+        (viewport.width as f64 / 2.0
+            + (world_x + f64::from(world_copy) - viewport.center_x) * viewport.scale)
+            .round() as i32,
+        (viewport.height as f64 / 2.0 + (world_y - viewport.center_y) * viewport.scale).round()
+            as i32,
+    )
+}
+
+fn clear_water_line(dots: &mut [u8], width: usize, from: (i32, i32), to: (i32, i32)) {
+    let (mut x, mut y) = from;
+    let (x1, y1) = to;
+    let dx = (x1 - x).abs();
+    let dy = -(y1 - y).abs();
+    let sx = if x < x1 { 1 } else { -1 };
+    let sy = if y < y1 { 1 } else { -1 };
+    let mut error = dx + dy;
+    loop {
+        clear_water(dots, width, x, y);
+        if x == x1 && y == y1 {
+            return;
+        }
+        let doubled = error * 2;
+        if doubled >= dy {
+            error += dy;
+            x += sx;
+        }
+        if doubled <= dx {
+            error += dx;
+            y += sy;
+        }
+    }
+}
+
+fn clear_water(dots: &mut [u8], width: usize, x: i32, y: i32) {
+    if x >= 0 && y >= 0 && (x as usize) < width && (y as usize) < dots.len() / width {
+        let dot = &mut dots[y as usize * width + x as usize];
+        if *dot == WATER {
+            *dot = 0;
+        }
+    }
+}
+
+fn read_u16(bytes: &[u8], offset: usize) -> Result<u16, String> {
+    bytes
+        .get(offset..offset + 2)
+        .and_then(|value| value.try_into().ok())
+        .map(u16::from_le_bytes)
+        .ok_or_else(|| "map detail asset is truncated".to_owned())
+}
+
+fn read_i32(bytes: &[u8], offset: usize) -> Result<i32, String> {
+    bytes
+        .get(offset..offset + 4)
+        .and_then(|value| value.try_into().ok())
+        .map(i32::from_le_bytes)
+        .ok_or_else(|| "map detail asset is truncated".to_owned())
+}
+
+fn read_points(bytes: &[u8], offset: &mut usize) -> Result<Vec<(f64, f64)>, String> {
+    let count = usize::from(read_u16(bytes, *offset)?);
+    *offset += 2;
+    let mut points = Vec::with_capacity(count);
+    for _ in 0..count {
+        let longitude = f64::from(read_i32(bytes, *offset)?) / 1_000_000.0;
+        let latitude = f64::from(read_i32(bytes, *offset + 4)?) / 1_000_000.0;
+        *offset += 8;
+        points.push((longitude, latitude));
+    }
+    Ok(points)
+}
+
+fn draw_tile(
+    dots: &mut [u8],
+    tile: &Tile,
+    position: TilePosition,
+    viewport: Viewport,
+    world_copy: i32,
+) {
+    for layer in &tile.layers {
+        let extent = layer.extent.unwrap_or(4096);
+        if layer.name == "water" {
+            for feature in &layer.features {
+                let rings = mvt::decode_geometry(&feature.geometry);
+                fill_polygon(dots, extent, &rings, position, viewport, world_copy);
+            }
+        }
+    }
+    for layer in &tile.layers {
+        if layer.name != "boundary" {
+            continue;
+        }
+        let extent = layer.extent.unwrap_or(4096);
+        for feature in &layer.features {
+            if mvt::unsigned_property(layer, feature, "admin_level") != Some(2)
+                || mvt::boolean_property(layer, feature, "maritime") == Some(true)
+            {
+                continue;
+            }
+            for path in mvt::decode_geometry(&feature.geometry) {
+                let path = project_path(&path, extent, position, viewport, world_copy);
+                for edge in path.windows(2) {
+                    draw_line(
+                        dots,
+                        viewport.width,
+                        viewport.height,
+                        edge[0],
+                        edge[1],
+                        BORDER,
+                    );
+                }
+            }
+        }
+    }
+}
+
+fn fill_polygon(
+    dots: &mut [u8],
+    extent: u32,
+    rings: &[Vec<(i32, i32)>],
+    position: TilePosition,
+    viewport: Viewport,
+    world_copy: i32,
+) {
+    let rings: Vec<_> = rings
+        .iter()
+        .map(|ring| project_path(ring, extent, position, viewport, world_copy))
+        .filter(|ring| ring.len() >= 3)
+        .collect();
+    let Some(rows) = visible_rows(&rings, viewport.width, viewport.height) else {
+        return;
+    };
+    for y in rows {
+        let mut intersections = rings
+            .iter()
+            .flat_map(|ring| ring_intersections(ring, y as f64 + 0.5))
+            .collect::<Vec<_>>();
+        intersections.sort_by(f64::total_cmp);
+        for pair in intersections.chunks_exact(2) {
+            let start = pair[0].ceil().max(0.0) as usize;
+            let end = pair[1].ceil().min(viewport.width as f64) as usize;
+            for x in start..end {
+                dots[y * viewport.width + x] = WATER;
+            }
+        }
+    }
+}
+
+fn fill_country_polygon(
+    countries: &mut [u16],
+    extent: u32,
+    rings: &[Vec<(i32, i32)>],
+    country_id: u16,
+    position: TilePosition,
+    viewport: Viewport,
+    world_copy: i32,
+) {
+    let rings: Vec<_> = rings
+        .iter()
+        .map(|ring| project_path(ring, extent, position, viewport, world_copy))
+        .filter(|ring| ring.len() >= 3)
+        .collect();
+    let Some(rows) = visible_rows(&rings, viewport.width, viewport.height) else {
+        return;
+    };
+    for y in rows {
+        let mut intersections = rings
+            .iter()
+            .flat_map(|ring| ring_intersections(ring, y as f64 + 0.5))
+            .collect::<Vec<_>>();
+        intersections.sort_by(f64::total_cmp);
+        for pair in intersections.chunks_exact(2) {
+            let start = pair[0].ceil().max(0.0) as usize;
+            let end = pair[1].ceil().min(viewport.width as f64) as usize;
+            for x in start..end {
+                let pixel = &mut countries[y * viewport.width + x];
+                if *pixel == u16::MAX || country_id != u16::MAX {
+                    *pixel = (*pixel).min(country_id);
+                }
+            }
+        }
+    }
+}
+
+fn project_path(
+    path: &[(i32, i32)],
+    extent: u32,
+    position: TilePosition,
+    viewport: Viewport,
+    world_copy: i32,
+) -> Vec<(i32, i32)> {
+    let tiles = 2.0_f64.powi(position.zoom as i32);
+    let extent = f64::from(extent);
+    path.iter()
+        .map(|&(x, y)| {
+            let world_x = (f64::from(position.x) + f64::from(x) / extent) / tiles;
+            let world_y = (f64::from(position.y) + f64::from(y) / extent) / tiles;
+            (
+                (viewport.width as f64 / 2.0
+                    + (world_x + f64::from(world_copy) - viewport.center_x) * viewport.scale)
+                    .round() as i32,
+                (viewport.height as f64 / 2.0 + (world_y - viewport.center_y) * viewport.scale)
+                    .round() as i32,
+            )
+        })
+        .collect()
+}
+
+fn world_copies(viewport: Viewport) -> std::ops::RangeInclusive<i32> {
+    let half_width = viewport.width as f64 / (2.0 * viewport.scale);
+    let first = (viewport.center_x - half_width - 1.0).ceil() as i32;
+    let last = (viewport.center_x + half_width).floor() as i32;
+    first..=last
+}
+
+fn visible_rows(
+    rings: &[impl AsRef<[(i32, i32)]>],
+    width: usize,
+    height: usize,
+) -> Option<std::ops::Range<usize>> {
+    let mut min_x = i32::MAX;
+    let mut max_x = i32::MIN;
+    let mut min_y = i32::MAX;
+    let mut max_y = i32::MIN;
+
+    for ring in rings {
+        for &(x, y) in ring.as_ref() {
+            min_x = min_x.min(x);
+            max_x = max_x.max(x);
+            min_y = min_y.min(y);
+            max_y = max_y.max(y);
+        }
+    }
+    if min_x == i32::MAX
+        || max_x < 0
+        || min_x >= width as i32
+        || max_y < 0
+        || min_y >= height as i32
+    {
+        return None;
+    }
+
+    let start = min_y.max(0) as usize;
+    let end = (max_y.saturating_add(1).max(0) as usize).min(height);
+    (start < end).then_some(start..end)
+}
+
+fn ring_intersections(ring: &[(i32, i32)], scanline: f64) -> Vec<f64> {
+    ring.windows(2)
+        .filter_map(|edge| {
+            let ((x0, y0), (x1, y1)) = (edge[0], edge[1]);
+            ((f64::from(y0) > scanline) != (f64::from(y1) > scanline)).then(|| {
+                f64::from(x0) + (scanline - f64::from(y0)) * f64::from(x1 - x0) / f64::from(y1 - y0)
+            })
+        })
+        .collect()
+}
+
+fn draw_line(
+    dots: &mut [u8],
+    width: usize,
+    height: usize,
+    from: (i32, i32),
+    to: (i32, i32),
+    color: u8,
+) {
+    let (mut x, mut y) = from;
+    let (x1, y1) = to;
+    let dx = (x1 - x).abs();
+    let dy = -(y1 - y).abs();
+    let sx = if x < x1 { 1 } else { -1 };
+    let sy = if y < y1 { 1 } else { -1 };
+    let mut error = dx + dy;
+    loop {
+        if x >= 0 && y >= 0 && (x as usize) < width && (y as usize) < height {
+            dots[y as usize * width + x as usize] = color;
+        }
+        if x == x1 && y == y1 {
+            return;
+        }
+        let doubled = error * 2;
+        if doubled >= dy {
+            error += dy;
+            x += sx;
+        }
+        if doubled <= dx {
+            error += dx;
+            y += sy;
+        }
+    }
+}
+
+fn render_dots(
+    dots: &[u8],
+    countries: &[u16],
+    state: &MapState,
+    theme: Theme,
+    dot_width: usize,
+    area: Rect,
+    buffer: &mut Buffer,
+) {
+    for row in 0..usize::from(area.height) {
+        for column in 0..usize::from(area.width) {
+            let mut mask = 0;
+            let mut water = 0;
+            let mut border = 0;
+            for dot_y in 0..4 {
+                for dot_x in 0..2 {
+                    let value = dots[(row * 4 + dot_y) * dot_width + column * 2 + dot_x];
+                    if value != 0 {
+                        mask |= BRAILLE_DOTS[dot_y][dot_x];
+                    }
+                    water += usize::from(value == WATER);
+                    border += usize::from(value == BORDER);
+                }
+            }
+            let foreground = if border > water {
+                theme.border()
+            } else {
+                theme.water()
+            };
+            let country = dominant_country(countries, dot_width, row, column);
+            let land = if country == NEUTRAL_LAND {
+                Style::default().bg(theme.neutral_land())
+            } else {
+                state
+                    .country_styles
+                    .get(usize::from(country))
+                    .and_then(|style| *style)
+                    .unwrap_or_else(|| Style::default().bg(theme.land()))
+            };
+            buffer[(area.x + column as u16, area.y + row as u16)]
+                .set_symbol(&braille(mask))
+                .set_style(Style::default().fg(foreground).patch(land));
+        }
+    }
+}
+
+impl Map {
+    fn render_anchors(
+        &self,
+        visible_countries: &[bool],
+        state: &MapState,
+        theme: Theme,
+        viewport: Viewport,
+        area: Rect,
+        buffer: &mut Buffer,
+    ) {
+        for (country, style) in state.country_styles.iter().enumerate() {
+            let Some(style) = style else { continue };
+            let country = country as u16;
+            if visible_countries
+                .get(usize::from(country))
+                .copied()
+                .unwrap_or(false)
+            {
+                continue;
+            }
+            let Some((world_x, world_y)) = self.countries.anchor(country) else {
+                continue;
+            };
+            let horizontal = (world_x - viewport.center_x + 0.5).rem_euclid(1.0) - 0.5;
+            let dot_x = (viewport.width as f64 / 2.0 + horizontal * viewport.scale).round() as i32;
+            let dot_y = (viewport.height as f64 / 2.0
+                + (world_y - viewport.center_y) * viewport.scale)
+                .round() as i32;
+            if dot_x < 0 || dot_y < 0 {
+                continue;
+            }
+            let cell_x = dot_x as usize / 2;
+            let cell_y = dot_y as usize / 4;
+            if cell_x >= usize::from(area.width) || cell_y >= usize::from(area.height) {
+                continue;
+            }
+            buffer[(area.x + cell_x as u16, area.y + cell_y as u16)]
+                .set_symbol("•")
+                .set_style(Style::default().fg(theme.water()).patch(*style));
+        }
+    }
+}
+
+fn visible_countries(
+    countries: &[u16],
+    dot_width: usize,
+    rows: usize,
+    columns: usize,
+    country_count: usize,
+) -> Vec<bool> {
+    let mut visible = vec![false; country_count];
+    for row in 0..rows {
+        for column in 0..columns {
+            let country = usize::from(dominant_country(countries, dot_width, row, column));
+            if let Some(value) = visible.get_mut(country) {
+                *value = true;
+            }
+        }
+    }
+    visible
+}
+
+fn dominant_country(countries: &[u16], dot_width: usize, row: usize, column: usize) -> u16 {
+    let mut selected = u16::MAX;
+    let mut selected_count = 0;
+    for dot_y in 0..4 {
+        for dot_x in 0..2 {
+            let candidate = countries[(row * 4 + dot_y) * dot_width + column * 2 + dot_x];
+            if candidate == u16::MAX {
+                continue;
+            }
+            let count = (0..4)
+                .flat_map(|other_y| (0..2).map(move |other_x| (other_y, other_x)))
+                .filter(|&(other_y, other_x)| {
+                    countries[(row * 4 + other_y) * dot_width + column * 2 + other_x] == candidate
+                })
+                .count();
+            if count > selected_count || (count == selected_count && candidate < selected) {
+                selected = candidate;
+                selected_count = count;
+            }
+        }
+    }
+    selected
+}
+
+fn render_status(area: Rect, buffer: &mut Buffer, zoom: f64) {
+    let status = status_line(zoom);
+    for (index, character) in status.chars().take(usize::from(area.width)).enumerate() {
+        buffer[(area.x + index as u16, area.y + area.height - 1)]
+            .set_symbol(&character.to_string())
+            .set_style(
+                Style::default()
+                    .fg(ratatui::style::Color::Gray)
+                    .bg(ratatui::style::Color::Black),
+            );
+    }
+}
+
+fn render_resize_message(area: Rect, buffer: &mut Buffer) {
+    let message = "Resize terminal: minimum 20 columns x 8 rows";
+    for (index, character) in message.chars().take(usize::from(area.width)).enumerate() {
+        buffer[(area.x + index as u16, area.y + area.height / 2)]
+            .set_symbol(&character.to_string())
+            .set_style(Style::default());
+    }
+}
+
+fn status_line(zoom: f64) -> String {
+    format!("  {OSM_ATTRIBUTION}  |  Zoom {zoom:.2}  +/- zoom  Arrows pan  Esc quit")
+}
+
+fn braille(mask: u8) -> String {
+    char::from_u32(0x2800 + u32::from(mask))
+        .expect("valid Braille mask")
+        .to_string()
+}
+
+#[cfg(test)]
+mod tests;
