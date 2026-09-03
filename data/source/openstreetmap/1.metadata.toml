@@ -3,6 +3,12 @@ source_repository = "https://www.openstreetmap.org/"
 retrieved_on = "2026-08-27"
 format = "Mapbox Vector Tile 2.1, gzip compressed"
 
+[tiles]
+"1_0_0.pbf.gz" = "d326244c13d0210b3e12e185d4215c52bebb00ab0b05713f2bf407f70a508293"
+"1_0_1.pbf.gz" = "199c6cdb6eb6a92d6940544f64adbb4f88c02a02204042779cea0acd9c8dcd3c"
+"1_1_0.pbf.gz" = "451f699e208d4489fe0e92377ba4f7383780804a07357e9a98b223e3b8775653"
+"1_1_1.pbf.gz" = "fb523f2a6c942d54a84fd6c6cee7c64d2bbc232073c453961db0042085b98223"
+
 # Map data attribution required by OpenStreetMap.
 attribution = "OpenStreetMap contributors"
 data_license = "Open Database License (ODbL)"
