@@ -83,6 +83,13 @@ where
                     }
                 }
             }
+            EventAction::ZoomOutOrInsertHyphen => {
+                if self.input.is_empty() {
+                    map.zoom_out();
+                } else {
+                    self.handle_input(InputAction::Insert('-'), map);
+                }
+            }
             EventAction::Pan(horizontal, vertical) => map.pan(horizontal, vertical),
             EventAction::Input(action) => self.handle_input(action, map),
             EventAction::Redraw | EventAction::Wait => {}
@@ -327,7 +334,7 @@ where
                 if self.selected_suggestion.is_some() {
                     "Enter: complete selection   Tab: next option   Esc: quit".to_owned()
                 } else {
-                    "Enter: submit   Arrows: pan   +/-: zoom   Esc: quit".to_owned()
+                    "Enter: submit   Arrows: pan   +/-: zoom when empty   Esc: quit".to_owned()
                 }
             });
         frame.render_widget(
