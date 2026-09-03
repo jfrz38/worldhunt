@@ -13,7 +13,7 @@ impl Default for RandomTargetSelector {
 
 impl RandomTargetSelector {
     pub fn new() -> Self {
-        Self(StdRng::from_os_rng())
+        Self(rand::make_rng())
     }
 
     pub fn seeded(seed: u64) -> Self {

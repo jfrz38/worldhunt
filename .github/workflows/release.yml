@@ -16,7 +16,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@1.88.0
@@ -67,7 +67,7 @@ jobs:
           if [ -n "$tag_commit" ]; then
             test "$tag_commit" = "$head_commit"
           else
-            git tag -a "$TAG" -m "WorldHunt $TAG"
+            git tag "$TAG"
             git push origin "$TAG"
           fi
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "WorldHunt $TAG" --generate-notes
