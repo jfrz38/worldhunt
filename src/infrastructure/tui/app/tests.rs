@@ -13,7 +13,12 @@ struct Catalog;
 
 impl CountryCatalog for Catalog {
     fn playable(&self) -> &[CountryId] {
-        static COUNTRIES: [CountryId; 2] = [CountryId::new(0), CountryId::new(1)];
+        static COUNTRIES: [CountryId; 4] = [
+            CountryId::new(0),
+            CountryId::new(1),
+            CountryId::new(2),
+            CountryId::new(3),
+        ];
         &COUNTRIES
     }
 
@@ -21,6 +26,8 @@ impl CountryCatalog for Catalog {
         match country.value() {
             0 => Some("France"),
             1 => Some("Spain"),
+            2 => Some("Guinea-Bissau"),
+            3 => Some("Timor-Leste"),
             _ => None,
         }
     }
@@ -64,6 +71,8 @@ impl CountryCatalog for Catalog {
         match input.as_str() {
             "France" => Some(CountryId::new(0)),
             "Spain" => Some(CountryId::new(1)),
+            "Guinea-Bissau" => Some(CountryId::new(2)),
+            "Timor-Leste" => Some(CountryId::new(3)),
             _ => None,
         }
     }
@@ -106,6 +115,46 @@ fn accepted_guess_clears_the_input_and_is_shown_in_history() {
     assert!(app.input.is_empty());
     assert_eq!(app.game.guesses().len(), 1);
     assert!(app.message.is_none());
+}
+
+#[test]
+fn hyphen_starts_zooming_only_with_an_empty_input() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+    let (_, _, zoom) = map.camera();
+
+    app.handle(EventAction::ZoomOutOrInsertHyphen, &mut map);
+    assert!(map.camera().2 < zoom);
+
+    app.handle(
+        EventAction::Input(input::InputAction::Insert('G')),
+        &mut map,
+    );
+    app.handle(EventAction::ZoomOutOrInsertHyphen, &mut map);
+    assert_eq!(app.input, "G-");
+}
+
+#[test]
+fn canonical_hyphenated_country_names_can_be_entered_and_submitted() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let mut map = Map::load().expect("embedded map is valid");
+
+    for name in ["Guinea-Bissau", "Timor-Leste"] {
+        for character in name.chars() {
+            let action = if character == '-' {
+                EventAction::ZoomOutOrInsertHyphen
+            } else {
+                EventAction::Input(input::InputAction::Insert(character))
+            };
+            app.handle(action, &mut map);
+        }
+        app.handle(EventAction::Input(input::InputAction::Submit), &mut map);
+    }
+
+    assert_eq!(app.game.guesses().len(), 2);
+    assert!(app.input.is_empty());
 }
 
 #[test]

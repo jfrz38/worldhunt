@@ -39,6 +39,14 @@ fn plain_q_does_not_quit() {
 }
 
 #[test]
+fn hyphen_is_resolved_by_the_app_using_the_current_input() {
+    assert_eq!(
+        event_action(key(KeyCode::Char('-'), KeyModifiers::NONE)),
+        EventAction::ZoomOutOrInsertHyphen
+    );
+}
+
+#[test]
 fn key_release_does_not_quit() {
     let event = Event::Key(KeyEvent {
         code: KeyCode::Esc,

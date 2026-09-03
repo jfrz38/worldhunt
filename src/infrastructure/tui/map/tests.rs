@@ -1,6 +1,7 @@
 use super::{
-    INITIAL_ZOOM, Map, MapState, NORTH, SOUTH, SPAIN_CENTER_X, SPAIN_CENTER_Y, dominant_country,
-    fill_geographic_country, status_line, visible_countries, visible_rows,
+    INITIAL_ZOOM, Map, MapState, NORTH, SOUTH, SPAIN_CENTER_X, SPAIN_CENTER_Y, TilePosition,
+    Viewport, dominant_country, fill_geographic_country, project_geographic_point, project_path,
+    status_line, visible_countries, visible_rows, world_copies,
 };
 use crate::domain::{CountryId, Game, Proximity};
 use crate::infrastructure::tui::theme::{ColorMode, Theme};
@@ -60,7 +61,19 @@ fn geographic_details_preserve_their_country_identity() {
     let mut countries = vec![u16::MAX; 16];
     let polygon = [(-2.0, -2.0), (2.0, -2.0), (2.0, 2.0), (-2.0, 2.0)];
 
-    fill_geographic_country(&mut countries, 4, 4, &polygon, 7, 0.5, 0.5, 100.0);
+    fill_geographic_country(
+        &mut countries,
+        &polygon,
+        7,
+        Viewport {
+            width: 4,
+            height: 4,
+            center_x: 0.5,
+            center_y: 0.5,
+            scale: 100.0,
+        },
+        0,
+    );
 
     assert!(countries.contains(&7));
 }
@@ -111,6 +124,74 @@ fn navigation_clamps_latitude_wraps_longitude_and_bounds_zoom() {
     assert_eq!(map.zoom, 0.0);
     map.pan(0.0, 100.0);
     assert_eq!(map.center_y, SOUTH);
+}
+
+#[test]
+fn projects_adjacent_world_copies_across_the_antimeridian() {
+    let near_east = project_geographic_point(
+        (-176.4, 0.0),
+        Viewport {
+            width: 100,
+            height: 100,
+            center_x: 0.99,
+            center_y: 0.5,
+            scale: 100.0,
+        },
+        1,
+    );
+    let near_west = project_geographic_point(
+        (176.4, 0.0),
+        Viewport {
+            width: 100,
+            height: 100,
+            center_x: 0.01,
+            center_y: 0.5,
+            scale: 100.0,
+        },
+        -1,
+    );
+
+    assert!((near_east.0 - 52).abs() <= 1);
+    assert!((near_west.0 - 48).abs() <= 1);
+}
+
+#[test]
+fn keeps_paths_continuous_within_a_world_copy() {
+    let path = project_path(
+        &[(0, 0), (4096, 0)],
+        4096,
+        TilePosition {
+            x: 0,
+            y: 0,
+            zoom: 0,
+        },
+        Viewport {
+            width: 100,
+            height: 100,
+            center_x: 0.99,
+            center_y: 0.5,
+            scale: 100.0,
+        },
+        0,
+    );
+
+    assert_eq!(path[1].0 - path[0].0, 100);
+}
+
+#[test]
+fn draws_every_world_copy_that_intersects_a_wide_viewport() {
+    let viewport = Viewport {
+        width: 600,
+        height: 100,
+        center_x: 0.5,
+        center_y: 0.5,
+        scale: 100.0,
+    };
+
+    assert_eq!(
+        world_copies(viewport).collect::<Vec<_>>(),
+        vec![-3, -2, -1, 0, 1, 2, 3]
+    );
 }
 
 #[test]
