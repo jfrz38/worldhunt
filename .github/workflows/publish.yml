@@ -17,7 +17,7 @@ jobs:
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.version-check.outputs.local-version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Select and validate the latest stable release
@@ -35,7 +35,7 @@ jobs:
           git merge-base --is-ancestor "$tag^{commit}" HEAD
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - name: Check out selected release tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.release.outputs.tag }}
       - name: Check version can be published
@@ -63,7 +63,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.select-release.outputs.tag }}
       - uses: dtolnay/rust-toolchain@1.88.0
