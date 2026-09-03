@@ -45,3 +45,37 @@ fn suggests_the_shortest_matching_alias_for_moldova() {
             .any(|suggestion| suggestion.completion == "Moldova")
     );
 }
+
+#[test]
+fn searches_any_country_name_word_and_prioritizes_the_first_word() {
+    let catalog = RuntimeCountryCatalog::load(196).expect("embedded catalog is valid");
+
+    let sahara = catalog.suggestions(&GuessInput::new("Sahara"), 5);
+    assert!(
+        sahara
+            .iter()
+            .any(|suggestion| suggestion.completion == "Western Sahara")
+    );
+
+    let korea = catalog.suggestions(&GuessInput::new("Korea"), 5);
+    assert_eq!(korea[0].completion, "North Korea");
+    assert!(
+        korea
+            .iter()
+            .any(|suggestion| suggestion.completion == "South Korea")
+    );
+    assert_eq!(
+        korea
+            .iter()
+            .filter(|suggestion| suggestion.completion == "North Korea")
+            .count(),
+        1
+    );
+
+    let first_word = catalog.suggestions(&GuessInput::new("Re"), 5);
+    let first_word_names = first_word
+        .iter()
+        .map(|suggestion| suggestion.completion.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(first_word_names.first(), Some(&"Republic of Korea"));
+}

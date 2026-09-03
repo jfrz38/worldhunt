@@ -1,5 +1,4 @@
 use crate::{
-    catalog::Catalog,
     raster::{self, HEIGHT, NEUTRAL_LAND, WATER, WIDTH},
     validation,
 };
@@ -318,373 +317,6 @@ fn render_tile_dots(
     preview
 }
 
-fn render_preview(decoded: &DecodedAsset, columns: usize, rows: usize, color: bool) -> String {
-    let rows = rows.saturating_sub(1).max(1);
-    let map_width = usize::from(decoded.width) * 2;
-    let map_height = usize::from(decoded.height);
-    let preview_rows = rows.min(columns * map_height / map_width).max(1);
-    let preview_columns = (preview_rows * map_width / map_height).min(columns).max(1);
-    let mut preview = String::new();
-    for row in 0..preview_rows {
-        for column in 0..preview_columns {
-            if color {
-                let id = preview_cell(decoded, column, row, preview_columns, preview_rows);
-                let background = preview_fill_color(id);
-                let glyph = braille_glyph(preview_braille_mask(
-                    decoded,
-                    column,
-                    row,
-                    preview_columns,
-                    preview_rows,
-                ));
-                preview.push_str(&format!(
-                    "\x1b[38;2;{};{};{};48;2;{};{};{}m{}",
-                    BORDER_COLOR.0,
-                    BORDER_COLOR.1,
-                    BORDER_COLOR.2,
-                    background.0,
-                    background.1,
-                    background.2,
-                    glyph,
-                ));
-            } else {
-                let top = preview_cell(decoded, column, row * 2, preview_columns, preview_rows * 2);
-                let bottom = preview_cell(
-                    decoded,
-                    column,
-                    row * 2 + 1,
-                    preview_columns,
-                    preview_rows * 2,
-                );
-                preview.push(preview_glyph(top, bottom));
-            }
-        }
-        if color {
-            preview.push_str("\x1b[0m");
-        }
-        preview.push('\n');
-    }
-    preview
-}
-
-fn render_vector_preview(
-    decoded: &DecodedAsset,
-    source: &crate::source::FeatureCollection,
-    catalog: &Catalog,
-    columns: usize,
-    rows: usize,
-    color: bool,
-) -> String {
-    let rows = rows.saturating_sub(1).max(1);
-    let map_width = usize::from(decoded.width) * 2;
-    let map_height = usize::from(decoded.height);
-    let preview_rows = rows.min(columns * map_height / map_width).max(1);
-    let preview_columns = (preview_rows * map_width / map_height).min(columns).max(1);
-    let dots = vector_fill(source, catalog, preview_columns * 2, preview_rows * 4);
-    let mut preview = String::new();
-
-    for row in 0..preview_rows {
-        for column in 0..preview_columns {
-            render_vector_cell(&mut preview, &dots, preview_columns * 2, column, row, color);
-        }
-        if color {
-            preview.push_str("\x1b[0m");
-        }
-        preview.push('\n');
-    }
-    preview
-}
-
-fn preview_half_block(top: u16, bottom: u16) -> String {
-    let foreground = preview_fill_color(top);
-    let background = preview_fill_color(bottom);
-    format!(
-        "\x1b[38;2;{};{};{};48;2;{};{};{}m▀",
-        foreground.0, foreground.1, foreground.2, background.0, background.1, background.2,
-    )
-}
-
-fn preview_average_color(top: u16, bottom: u16) -> (u8, u8, u8) {
-    let top = preview_fill_color(top);
-    let bottom = preview_fill_color(bottom);
-    (
-        ((u16::from(top.0) + u16::from(bottom.0)) / 2) as u8,
-        ((u16::from(top.1) + u16::from(bottom.1)) / 2) as u8,
-        ((u16::from(top.2) + u16::from(bottom.2)) / 2) as u8,
-    )
-}
-
-fn render_vector_cell(
-    preview: &mut String,
-    dots: &[u16],
-    dot_width: usize,
-    column: usize,
-    row: usize,
-    color: bool,
-) {
-    let mut counts = std::collections::HashMap::new();
-    let mut values = [WATER; 8];
-    for dot_y in 0..4 {
-        for dot_x in 0..2 {
-            let index = dot_y * 2 + dot_x;
-            let value = dots[(row * 4 + dot_y) * dot_width + column * 2 + dot_x];
-            values[index] = value;
-            *counts.entry(value).or_insert(0_usize) += 1;
-        }
-    }
-    let background = counts
-        .iter()
-        .max_by_key(|(id, count)| (**count, std::cmp::Reverse(**id)))
-        .map(|(id, _)| *id)
-        .expect("Braille cell contains dots");
-    let mut mask = 0;
-    let mut foreground = background;
-    let mut foreground_count = 0;
-    for dot_y in 0..4 {
-        for dot_x in 0..2 {
-            let index = dot_y * 2 + dot_x;
-            let value = values[index];
-            if preview_fill_color(value) != preview_fill_color(background) {
-                let count = counts[&value];
-                if count > foreground_count {
-                    foreground = value;
-                    foreground_count = count;
-                }
-                if value == foreground {
-                    mask |= BRAILLE_DOTS[dot_y][dot_x];
-                }
-            }
-        }
-    }
-    let political_border = political_border_mask(&values);
-    if mask == 0 && political_border != 0 {
-        mask = political_border;
-        foreground = WATER;
-    }
-
-    if mask == 0 {
-        let top = dominant_pair(values[0], values[1]);
-        let bottom = dominant_pair(values[6], values[7]);
-        if color {
-            preview.push_str(&preview_half_block(top, bottom));
-        } else {
-            preview.push(preview_glyph(top, bottom));
-        }
-    } else if color {
-        let foreground = if foreground == WATER {
-            BORDER_COLOR
-        } else {
-            preview_fill_color(foreground)
-        };
-        let background = preview_fill_color(background);
-        preview.push_str(&format!(
-            "\x1b[38;2;{};{};{};48;2;{};{};{}m{}",
-            foreground.0,
-            foreground.1,
-            foreground.2,
-            background.0,
-            background.1,
-            background.2,
-            braille_glyph(mask),
-        ));
-    } else {
-        preview.push(braille_glyph(mask));
-    }
-}
-
-fn dominant_pair(left: u16, right: u16) -> u16 {
-    left.min(right)
-}
-
-fn political_border_mask(values: &[u16; 8]) -> u8 {
-    let mut mask = 0;
-    for dot_y in 0..4 {
-        for dot_x in 0..2 {
-            let index = dot_y * 2 + dot_x;
-            let value = values[index];
-            if value == WATER {
-                continue;
-            }
-            let different_right =
-                dot_x == 0 && values[index + 1] != value && values[index + 1] != WATER;
-            let different_down =
-                dot_y < 3 && values[index + 2] != value && values[index + 2] != WATER;
-            if different_right || different_down {
-                mask |= BRAILLE_DOTS[dot_y][dot_x];
-            }
-        }
-    }
-    mask
-}
-
-fn vector_fill(
-    source: &crate::source::FeatureCollection,
-    catalog: &Catalog,
-    dot_width: usize,
-    dot_height: usize,
-) -> Vec<u16> {
-    let mut dots = vec![WATER; dot_width * dot_height];
-    for feature in &source.features {
-        let Some(geometry) = &feature.geometry else {
-            continue;
-        };
-        let id = feature_id(feature, catalog);
-        for polygon in geometry.polygons() {
-            rasterize_polygon(&mut dots, dot_width, dot_height, polygon, id);
-        }
-    }
-    dots
-}
-
-fn feature_id(feature: &crate::source::Feature, catalog: &Catalog) -> u16 {
-    let Some(iso3) = &feature.properties.iso3 else {
-        return WATER;
-    };
-    catalog
-        .countries
-        .iter()
-        .position(|country| {
-            country
-                .source_records
-                .iter()
-                .any(|selector| selector.iso3 == *iso3 && selector.name == feature.properties.name)
-        })
-        .map(|index| index as u16)
-        .unwrap_or(NEUTRAL_LAND)
-}
-
-fn rasterize_polygon(
-    dots: &mut [u16],
-    dot_width: usize,
-    dot_height: usize,
-    polygon: &[Vec<Vec<f64>>],
-    id: u16,
-) {
-    let rings: Vec<_> = polygon.iter().map(|ring| project_ring(ring)).collect();
-    for shift in [-360.0, 0.0, 360.0] {
-        let projected: Vec<_> = rings
-            .iter()
-            .map(|ring| {
-                ring.iter()
-                    .map(|(longitude, latitude)| {
-                        (
-                            (longitude + shift + 180.0) / 360.0 * dot_width as f64,
-                            (90.0 - latitude) / 150.0 * dot_height as f64,
-                        )
-                    })
-                    .collect()
-            })
-            .collect();
-        rasterize_projected_polygon(dots, dot_width, dot_height, &projected, id);
-    }
-}
-
-fn rasterize_projected_polygon(
-    dots: &mut [u16],
-    dot_width: usize,
-    dot_height: usize,
-    rings: &[Vec<(f64, f64)>],
-    id: u16,
-) {
-    let Some(outer) = rings.first() else {
-        return;
-    };
-    if polygon_area(outer) < 2.0 {
-        return;
-    }
-    let min_y = rings
-        .iter()
-        .flatten()
-        .map(|(_, y)| *y)
-        .fold(f64::INFINITY, f64::min)
-        .floor()
-        .max(0.0) as usize;
-    let max_y = rings
-        .iter()
-        .flatten()
-        .map(|(_, y)| *y)
-        .fold(f64::NEG_INFINITY, f64::max)
-        .ceil()
-        .min(dot_height as f64) as usize;
-    for y in min_y..max_y {
-        let mut intersections = rings
-            .iter()
-            .flat_map(|ring| ring_intersections(ring, y as f64 + 0.5))
-            .collect::<Vec<_>>();
-        intersections.sort_by(f64::total_cmp);
-        for pair in intersections.chunks_exact(2) {
-            let start = (pair[0] - 0.5).ceil().max(0.0) as usize;
-            let end = (pair[1] - 0.5).ceil().min(dot_width as f64) as usize;
-            for x in start..end {
-                let dot = &mut dots[y * dot_width + x];
-                *dot = (*dot).min(id);
-            }
-        }
-    }
-}
-
-fn project_ring(ring: &[Vec<f64>]) -> Vec<(f64, f64)> {
-    let mut longitude = ring[0][0];
-    let mut points = vec![(longitude, ring[0][1])];
-    for position in &ring[1..] {
-        let mut next_longitude = position[0];
-        while next_longitude - longitude > 180.0 {
-            next_longitude -= 360.0;
-        }
-        while longitude - next_longitude > 180.0 {
-            next_longitude += 360.0;
-        }
-        longitude = next_longitude;
-        points.push((longitude, position[1]));
-    }
-    points
-}
-
-fn polygon_area(ring: &[(f64, f64)]) -> f64 {
-    ring.windows(2)
-        .map(|edge| edge[0].0 * edge[1].1 - edge[1].0 * edge[0].1)
-        .sum::<f64>()
-        .abs()
-        / 2.0
-}
-
-fn ring_intersections(ring: &[(f64, f64)], scanline: f64) -> Vec<f64> {
-    ring.windows(2)
-        .filter_map(|edge| {
-            let ((x0, y0), (x1, y1)) = (edge[0], edge[1]);
-            ((y0 > scanline) != (y1 > scanline))
-                .then(|| x0 + (scanline - y0) * (x1 - x0) / (y1 - y0))
-        })
-        .collect()
-}
-
-fn preview_cell(
-    decoded: &DecodedAsset,
-    column: usize,
-    row: usize,
-    columns: usize,
-    rows: usize,
-) -> u16 {
-    let width = usize::from(decoded.width);
-    let x_start = column * width / columns;
-    let x_end = ((column + 1) * width / columns).max(x_start + 1);
-    let y_start = row * usize::from(decoded.height) / rows;
-    let y_end = ((row + 1) * usize::from(decoded.height) / rows).max(y_start + 1);
-    let mut coverage = std::collections::HashMap::new();
-    for y in y_start..y_end {
-        for x in x_start..x_end {
-            *coverage
-                .entry(decoded.cells[y * width + x])
-                .or_insert(0_usize) += 1;
-        }
-    }
-    coverage
-        .into_iter()
-        .max_by_key(|(id, count)| (*count, std::cmp::Reverse(*id)))
-        .map(|(id, _)| id)
-        .expect("preview sample always contains a source cell")
-}
-
 const BORDER_COLOR: (u8, u8, u8) = (37, 48, 56);
 const BRAILLE_DOTS: [[u8; 2]; 4] = [[0x01, 0x08], [0x02, 0x10], [0x04, 0x20], [0x40, 0x80]];
 
@@ -698,61 +330,21 @@ fn preview_fill_color(id: u16) -> (u8, u8, u8) {
     }
 }
 
-fn preview_braille_mask(
-    decoded: &DecodedAsset,
-    column: usize,
-    row: usize,
-    columns: usize,
-    rows: usize,
-) -> u8 {
-    const DOTS: [[u8; 2]; 4] = [[0x01, 0x08], [0x02, 0x10], [0x04, 0x20], [0x40, 0x80]];
-    let width = usize::from(decoded.width);
-    let height = usize::from(decoded.height);
-    let mut mask = 0;
-    for (dot_y, dots) in DOTS.iter().enumerate() {
-        for (dot_x, bit) in dots.iter().enumerate() {
-            let x = ((column * 2 + dot_x) * width + columns) / (columns * 2);
-            let y = ((row * 4 + dot_y) * height + rows * 2) / (rows * 4);
-            let x = x.min(width - 1);
-            let y = y.min(height - 1);
-            if decoded.borders[y * width + x] != 0 {
-                mask |= *bit;
-            }
-        }
-    }
-    mask
-}
-
 fn braille_glyph(mask: u8) -> char {
     char::from_u32(0x2800 + u32::from(mask)).expect("Braille mask is valid Unicode")
 }
 
-fn preview_glyph(top: u16, bottom: u16) -> char {
-    if top == WATER && bottom != WATER {
-        return '▄';
-    }
-    if top != WATER && bottom == WATER {
-        return '▀';
-    }
-    let id = if top == WATER { bottom } else { top };
-    if id == WATER {
-        ' '
-    } else if id == NEUTRAL_LAND {
-        '░'
-    } else {
-        '▓'
-    }
-}
-
+#[cfg(test)]
 pub(crate) struct DecodedAsset {
     pub(crate) width: u16,
     pub(crate) height: u16,
     pub(crate) country_count: u16,
-    pub(crate) cells: Vec<u16>,
-    pub(crate) borders: Vec<u8>,
     pub(crate) distances_km: Vec<u16>,
     pub(crate) adjacency: Vec<bool>,
 }
+
+#[cfg(not(test))]
+pub(crate) struct DecodedAsset;
 
 pub(crate) fn decode(bytes: &[u8], repository_root: &Path) -> Result<DecodedAsset, String> {
     if bytes.len() < HEADER_LENGTH || bytes[0..4] != MAGIC {
@@ -848,15 +440,21 @@ pub(crate) fn decode(bytes: &[u8], repository_root: &Path) -> Result<DecodedAsse
     {
         return Err("asset country count does not match the catalog".to_owned());
     }
-    Ok(DecodedAsset {
-        width,
-        height,
-        country_count,
-        cells,
-        borders,
-        distances_km,
-        adjacency,
-    })
+    #[cfg(test)]
+    {
+        Ok(DecodedAsset {
+            width,
+            height,
+            country_count,
+            distances_km,
+            adjacency,
+        })
+    }
+    #[cfg(not(test))]
+    {
+        let _ = (cells, borders, distances_km, adjacency);
+        Ok(DecodedAsset)
+    }
 }
 
 fn encode(
