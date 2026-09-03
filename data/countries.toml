@@ -884,8 +884,8 @@ name = "Liberia"
 
 [[countries]]
 iso3 = "LBY"
-name = "Libyan Arab Jamahiriya"
-aliases = []
+name = "Libya"
+aliases = ["Libyan Arab Jamahiriya"]
 
 [[countries.source_records]]
 iso3 = "LBY"
