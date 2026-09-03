@@ -29,7 +29,10 @@ pub(super) fn validate(
     })?;
     validate_provenance(&metadata, metadata_path)?;
 
-    let actual_checksum = format!("{:x}", Sha256::digest(source_bytes));
+    let actual_checksum = Sha256::digest(source_bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     if metadata.sha256 != actual_checksum {
         return Err(format!(
             "{}: SHA-256 mismatch: expected {}, found {}",
