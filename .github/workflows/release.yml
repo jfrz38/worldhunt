@@ -22,7 +22,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.88.0
         with:
           components: clippy, rustfmt
-      - name: Validate release candidate
+      - name: Run quality checks
+        run: make check
+      - name: Validate release package
         run: make release-check-clean
       - name: Read candidate version
         id: version
