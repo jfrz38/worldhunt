@@ -119,7 +119,7 @@ where
         let content = if area.width >= 90 {
             Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(65), Constraint::Percentage(35)])
+                .constraints([Constraint::Percentage(75), Constraint::Percentage(25)])
                 .split(sections[0])
         } else {
             Layout::default()
