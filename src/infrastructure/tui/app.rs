@@ -2,7 +2,7 @@ use std::io;
 
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Wrap},
@@ -26,6 +26,7 @@ use super::{
 const MINIMUM_WIDTH: u16 = 48;
 const MINIMUM_HEIGHT: u16 = 20;
 const SUGGESTION_LIMIT: usize = 5;
+const APPLICATION_VERSION: &str = concat!("v", env!("CARGO_PKG_VERSION"));
 
 pub(super) struct TuiApp<'a, Catalog, ProximityPort, Selector> {
     catalog: &'a Catalog,
@@ -109,12 +110,13 @@ where
             return;
         }
 
+        let status_message = self.status_message();
         let sections = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Min(8),
                 Constraint::Length(3),
-                Constraint::Length(4),
+                Constraint::Length(status_height(&status_message, area.width)),
             ])
             .split(area);
         let content = if area.width >= 90 {
@@ -146,7 +148,7 @@ where
         );
         self.render_history(frame, content[1]);
         self.render_input(frame, sections[1]);
-        self.render_message(frame, sections[2]);
+        self.render_message(frame, sections[2], &status_message);
     }
 
     fn handle_input(&mut self, action: InputAction, map: &mut Map) {
@@ -326,9 +328,31 @@ where
         );
     }
 
-    fn render_message(&self, frame: &mut Frame, area: Rect) {
-        let message = self
-            .message
+    fn render_message(&self, frame: &mut Frame, area: Rect, message: &str) {
+        frame.render_widget(
+            Paragraph::new(Span::styled(
+                message,
+                Style::default().add_modifier(Modifier::DIM),
+            ))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(" Status ")
+                    .title_bottom(
+                        Line::from(Span::styled(
+                            APPLICATION_VERSION,
+                            Style::default().add_modifier(Modifier::DIM),
+                        ))
+                        .alignment(Alignment::Right),
+                    ),
+            )
+            .wrap(Wrap { trim: true }),
+            area,
+        );
+    }
+
+    fn status_message(&self) -> String {
+        self.message
             .as_deref()
             .map(str::to_owned)
             .unwrap_or_else(|| {
@@ -337,16 +361,7 @@ where
                 } else {
                     "Enter: submit   Arrows: pan   +/-: zoom when empty   Esc: quit".to_owned()
                 }
-            });
-        frame.render_widget(
-            Paragraph::new(Span::styled(
-                &message,
-                Style::default().add_modifier(Modifier::DIM),
-            ))
-            .block(Block::default().borders(Borders::ALL).title(" Status "))
-            .wrap(Wrap { trim: true }),
-            area,
-        );
+            })
     }
 
     fn country_name(&self, country: CountryId) -> &str {
@@ -429,6 +444,25 @@ where
 
 fn display_width(text: &str) -> usize {
     UnicodeWidthStr::width(text)
+}
+
+fn status_height(message: &str, width: u16) -> u16 {
+    let available_width = usize::from(width.saturating_sub(2));
+    let mut line_count = 1;
+    let mut line_width = 0;
+
+    for word in message.split_whitespace() {
+        let word_width = display_width(word);
+        let separator_width = usize::from(line_width > 0);
+        if line_width + separator_width + word_width > available_width {
+            line_count += 1;
+            line_width = word_width;
+        } else {
+            line_width += separator_width + word_width;
+        }
+    }
+
+    2 + u16::try_from(line_count.min(2)).expect("status has at most two visible lines")
 }
 
 fn suggestions_width(suggestions: &[crate::domain::ports::CountrySuggestion]) -> usize {
