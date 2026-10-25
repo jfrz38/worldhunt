@@ -218,7 +218,7 @@ fn render_shows_suggestions_next_to_the_input() {
         .draw(|frame| app.render(frame, &map))
         .expect("frame renders");
 
-    let input_row = terminal_row(&terminal, 24);
+    let input_row = terminal_row(&terminal, 25);
     let status_row = terminal_row(&terminal, 28);
     assert!(input_row.contains("Sp | Tab: Spain"));
     assert!(!status_row.contains("Tab:"));
@@ -316,9 +316,9 @@ fn selected_suggestion_uses_inverse_video() {
         .draw(|frame| app.render(frame, &map))
         .expect("frame renders");
 
-    assert!(terminal_row(&terminal, 24).contains("Mo | Tab: Moldova | Monaco | Mongolia"));
+    assert!(terminal_row(&terminal, 25).contains("Mo | Tab: Moldova | Monaco | Mongolia"));
     assert!(
-        terminal.backend().buffer()[(11, 24)]
+        terminal.backend().buffer()[(11, 25)]
             .style()
             .add_modifier
             .contains(Modifier::REVERSED)
@@ -369,9 +369,9 @@ fn keeps_the_selected_suggestion_in_its_original_position_when_all_fit() {
         .draw(|frame| app.render(frame, &map))
         .expect("frame renders");
 
-    assert!(terminal_row(&terminal, 24).contains("Mo | Tab: Moldova | Monaco | Mongolia"));
+    assert!(terminal_row(&terminal, 25).contains("Mo | Tab: Moldova | Monaco | Mongolia"));
     assert!(
-        terminal.backend().buffer()[(30, 24)]
+        terminal.backend().buffer()[(30, 25)]
             .style()
             .add_modifier
             .contains(Modifier::REVERSED)
@@ -381,6 +381,22 @@ fn keeps_the_selected_suggestion_in_its_original_position_when_all_fit() {
 #[test]
 fn measures_terminal_display_width_instead_of_character_count() {
     assert_eq!(super::display_width("A界"), 3);
+}
+
+#[test]
+fn status_uses_one_content_row_when_its_message_fits() {
+    assert_eq!(super::status_height("Enter: submit", 48), 3);
+}
+
+#[test]
+fn status_uses_two_content_rows_when_its_message_wraps() {
+    assert_eq!(
+        super::status_height(
+            "Surrendered. The target was Spain. Press N for a new game or Esc to quit.",
+            48,
+        ),
+        4
+    );
 }
 
 #[test]
@@ -405,7 +421,7 @@ fn status_explains_that_enter_completes_a_selected_suggestion() {
         .draw(|frame| app.render(frame, &map))
         .expect("frame renders");
 
-    assert!(terminal_row(&terminal, 27).contains("Enter: complete selection"));
+    assert!(terminal_row(&terminal, 28).contains("Enter: complete selection"));
 }
 
 #[test]
@@ -621,6 +637,20 @@ fn wide_frame_contains_history_and_input() {
         input::action_for(KeyCode::Char('q')),
         Some(input::InputAction::Insert('q'))
     );
+}
+
+#[test]
+fn render_shows_the_application_version_in_the_bottom_right_corner() {
+    let mut selector = Selector(CountryId::new(0));
+    let app = app(&mut selector);
+    let map = Map::load().expect("embedded map is valid");
+    let mut terminal = Terminal::new(TestBackend::new(100, 30)).expect("test terminal starts");
+
+    terminal
+        .draw(|frame| app.render(frame, &map))
+        .expect("frame renders");
+
+    assert!(terminal_row(&terminal, 29).contains(concat!("v", env!("CARGO_PKG_VERSION"))));
 }
 
 #[test]
