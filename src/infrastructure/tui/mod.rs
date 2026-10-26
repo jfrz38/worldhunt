@@ -11,6 +11,7 @@ mod tests;
 
 use std::{
     io::{self, stdout},
+    sync::mpsc::{Receiver, TryRecvError},
     time::Duration,
 };
 
@@ -23,6 +24,9 @@ use self::{
     app::TuiApp,
     terminal::{CrosstermControl, with_terminal},
 };
+use super::update_check::UpdateNotice;
+
+const UPDATE_POLL_INTERVAL: Duration = Duration::from_millis(100);
 
 pub fn run<Catalog, ProximityPort, Selector>(
     catalog: &Catalog,
@@ -34,8 +38,9 @@ where
     ProximityPort: CountryProximity,
     Selector: TargetSelector,
 {
+    let updates = super::update_check::start(env!("CARGO_PKG_VERSION"));
     let app = TuiApp::new(catalog, proximity, selector)?;
-    with_terminal(CrosstermControl::new(), || run_event_loop(app))
+    with_terminal(CrosstermControl::new(), || run_event_loop(app, updates))
 }
 
 /// Renders production wiring without requiring an interactive terminal.
@@ -63,6 +68,7 @@ where
 
 fn run_event_loop<Catalog, ProximityPort, Selector>(
     mut app: TuiApp<'_, Catalog, ProximityPort, Selector>,
+    mut updates: Option<Receiver<UpdateNotice>>,
 ) -> io::Result<()>
 where
     Catalog: CountryCatalog,
@@ -75,6 +81,12 @@ where
     draw(&mut terminal, &app, &map)?;
 
     loop {
+        if settle_update(&mut app, &mut updates) {
+            draw(&mut terminal, &app, &map)?;
+        }
+        if updates.is_some() && !event::poll(UPDATE_POLL_INTERVAL)? {
+            continue;
+        }
         let mut redraw = false;
         for action in pending_actions(event_action(event::read()?))? {
             if action != EventAction::Wait {
@@ -87,6 +99,32 @@ where
         }
         if redraw {
             draw(&mut terminal, &app, &map)?;
+        }
+    }
+}
+
+fn settle_update<Catalog, ProximityPort, Selector>(
+    app: &mut TuiApp<'_, Catalog, ProximityPort, Selector>,
+    updates: &mut Option<Receiver<UpdateNotice>>,
+) -> bool
+where
+    Catalog: CountryCatalog,
+    ProximityPort: CountryProximity,
+    Selector: TargetSelector,
+{
+    let Some(receiver) = updates.as_ref() else {
+        return false;
+    };
+    match receiver.try_recv() {
+        Ok(notice) => {
+            app.set_update_version(notice.latest);
+            *updates = None;
+            true
+        }
+        Err(TryRecvError::Empty) => false,
+        Err(TryRecvError::Disconnected) => {
+            *updates = None;
+            false
         }
     }
 }

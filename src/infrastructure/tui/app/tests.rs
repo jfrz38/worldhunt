@@ -1,12 +1,17 @@
+use std::sync::mpsc;
+
 use crossterm::event::KeyCode;
-use ratatui::{Terminal, backend::TestBackend};
+use ratatui::{Terminal, backend::TestBackend, style::Color};
 
 use crate::{
     domain::{
         CountryId, GuessClue, GuessInput, Proximity,
         ports::{CountryCatalog, CountryProximity, TargetSelector},
     },
-    infrastructure::tui::{EventAction, app::TuiApp, input, map::Map},
+    infrastructure::{
+        tui::{EventAction, app::TuiApp, input, map::Map, settle_update},
+        update_check::UpdateNotice,
+    },
 };
 
 struct Catalog;
@@ -651,6 +656,69 @@ fn render_shows_the_application_version_in_the_bottom_right_corner() {
         .expect("frame renders");
 
     assert!(terminal_row(&terminal, 29).contains(concat!("v", env!("CARGO_PKG_VERSION"))));
+}
+
+#[test]
+fn render_highlights_a_newer_application_version() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    app.set_update_version("0.2.0".to_owned());
+    let map = Map::load().expect("embedded map is valid");
+    let mut terminal = Terminal::new(TestBackend::new(100, 30)).expect("test terminal starts");
+
+    terminal
+        .draw(|frame| app.render(frame, &map))
+        .expect("frame renders");
+
+    let border = terminal_row(&terminal, 29);
+    assert!(border.contains(concat!("v", env!("CARGO_PKG_VERSION"), " → 0.2.0")));
+    assert!((0..100).any(|column| terminal.backend().buffer()[(column, 29)].fg == Color::Yellow));
+}
+
+#[test]
+fn narrow_version_title_uses_a_warning_mark_when_the_notice_does_not_fit() {
+    let title = super::version_title(20, Some("123456789.123456789.123456789"));
+
+    assert_eq!(
+        title.spans.last().map(|span| span.content.as_ref()),
+        Some("!")
+    );
+    assert_eq!(
+        title.spans.last().map(|span| span.style.fg),
+        Some(Some(Color::Yellow))
+    );
+}
+
+#[test]
+fn completed_update_check_changes_the_render_state_without_blocking() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let (sender, receiver) = mpsc::channel();
+    let mut updates = Some(receiver);
+
+    assert!(!settle_update(&mut app, &mut updates));
+    sender
+        .send(UpdateNotice {
+            latest: "0.2.0".to_owned(),
+        })
+        .expect("notice is sent");
+
+    assert!(settle_update(&mut app, &mut updates));
+    assert_eq!(app.update_version.as_deref(), Some("0.2.0"));
+    assert!(updates.is_none());
+}
+
+#[test]
+fn completed_check_without_an_update_stops_terminal_polling() {
+    let mut selector = Selector(CountryId::new(0));
+    let mut app = app(&mut selector);
+    let (sender, receiver) = mpsc::channel();
+    let mut updates = Some(receiver);
+    drop(sender);
+
+    assert!(!settle_update(&mut app, &mut updates));
+    assert!(updates.is_none());
+    assert!(app.update_version.is_none());
 }
 
 #[test]

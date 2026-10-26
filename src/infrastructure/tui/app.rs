@@ -3,7 +3,7 @@ use std::io;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
@@ -39,6 +39,7 @@ pub(super) struct TuiApp<'a, Catalog, ProximityPort, Selector> {
     hint_count: usize,
     surrendered: bool,
     should_quit: bool,
+    update_version: Option<String>,
 }
 
 impl<'a, Catalog, ProximityPort, Selector> TuiApp<'a, Catalog, ProximityPort, Selector>
@@ -66,11 +67,16 @@ where
             hint_count: 0,
             surrendered: false,
             should_quit: false,
+            update_version: None,
         })
     }
 
     pub(super) fn should_quit(&self) -> bool {
         self.should_quit
+    }
+
+    pub(super) fn set_update_version(&mut self, version: String) {
+        self.update_version = Some(version);
     }
 
     pub(super) fn handle(&mut self, action: EventAction, map: &mut Map) {
@@ -338,13 +344,7 @@ where
                 Block::default()
                     .borders(Borders::ALL)
                     .title(" Status ")
-                    .title_bottom(
-                        Line::from(Span::styled(
-                            APPLICATION_VERSION,
-                            Style::default().add_modifier(Modifier::DIM),
-                        ))
-                        .alignment(Alignment::Right),
-                    ),
+                    .title_bottom(version_title(area.width, self.update_version.as_deref())),
             )
             .wrap(Wrap { trim: true }),
             area,
@@ -440,6 +440,25 @@ where
             })
             .collect()
     }
+}
+
+fn version_title(width: u16, latest: Option<&str>) -> Line<'static> {
+    let default_style = Style::default().add_modifier(Modifier::DIM);
+    let Some(latest) = latest else {
+        return Line::from(Span::styled(APPLICATION_VERSION, default_style))
+            .alignment(Alignment::Right);
+    };
+    let warning_style = Style::default().fg(Color::Yellow);
+    let announcement = format!("{APPLICATION_VERSION} → {latest}");
+    let border_corners = 2;
+    if display_width(&announcement) + border_corners <= usize::from(width) {
+        return Line::from(Span::styled(announcement, warning_style)).alignment(Alignment::Right);
+    }
+    Line::from(vec![
+        Span::styled(APPLICATION_VERSION, default_style),
+        Span::styled("!", warning_style),
+    ])
+    .alignment(Alignment::Right)
 }
 
 fn display_width(text: &str) -> usize {

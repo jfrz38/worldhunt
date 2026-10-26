@@ -57,8 +57,10 @@ TUI renderer -> Ratatui buffer -> terminal
 
 `infrastructure/world_data` decodes the validated `world-v2.bin` asset and implements `CountryCatalog` and `CountryProximity`. The active map embeds offline OpenStreetMap vector tiles, country-ID overlay tiles, visual anchors, and small geographic details. Map identifiers use the catalog's stable indexes but do not leak into domain APIs.
 
+`infrastructure/update_check` performs an optional, cached crates.io lookup on a background thread. It communicates a newer stable version to the terminal through a channel; network, cache, timeout, and parsing failures remain silent and cannot delay startup or gameplay.
+
 The decoder validates magic values, versions, section lengths, identifier ranges, anchor bounds, matrix symmetry, and adjacency invariants before exposing domain-facing data. The generator writes deterministic output, so CI can compare regenerated assets byte for byte.
 
 ## Terminal Lifecycle
 
-Terminal setup and teardown are infrastructure responsibilities. Raw mode, alternate screen, cursor visibility, and mouse capture are restored after normal exit, recoverable setup failures, and panics. The event loop redraws only after presentation changes or terminal resize events.
+Terminal setup and teardown are infrastructure responsibilities. Raw mode, alternate screen, cursor visibility, and mouse capture are restored after normal exit, recoverable setup failures, and panics. The event loop redraws only after presentation changes, terminal resize events, or completion of a pending update notice. While the background check is in flight it polls terminal input briefly so the notice can appear without waiting for user input; once the check settles it returns to blocking event reads.

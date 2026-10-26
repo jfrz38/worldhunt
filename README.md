@@ -25,6 +25,13 @@ worldhunt
 
 Everything needed to play is included. No network connection or external data files are required.
 
+While the game opens, WorldHunt performs a best-effort background check for a
+newer stable version on crates.io. When one is available, the version in the
+bottom-right corner shows the update in yellow. The check never delays or
+interrupts play, remains silent when offline, and caches successful checks for
+24 hours and failures for 6 hours. Set `WORLDHUNT_UPDATE_CHECK=0` to disable all
+update-check network access.
+
 ## Play
 
 There is one hidden country and 196 possible answers. Guess as often as you need: every accepted guess shows its distance from the target, or tells you when it shares a border with it. The map keeps track of every attempt, so you can see whether you are getting warmer.

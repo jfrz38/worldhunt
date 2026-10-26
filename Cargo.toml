@@ -45,12 +45,18 @@ resolver = "3"
 
 [dependencies]
 crossterm = { version = "0.29.0", default-features = false, features = ["events", "windows"] }
+dirs = "=7.0.0"
 flate2 = "1.1.2"
 prost = "0.14.1"
 ratatui = { version = "0.30.2", default-features = false, features = ["crossterm"] }
 rand = { version = "0.10.2", features = ["std_rng"] }
+semver = "=1.0.28"
 serde = { version = "1.0.219", features = ["derive"] }
 toml = "1.1.4"
 unicode-normalization = "0.1.24"
 unicode-segmentation = "1.12.0"
 unicode-width = "0.2.0"
+ureq = { version = "=3.5.0", default-features = false, features = ["rustls", "json"] }
+
+[dev-dependencies]
+serde_json = "=1.0.154"
