@@ -1,126 +1,59 @@
 # Changelog
 
-All notable changes to WorldHunt are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to WorldHunt are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- git-cliff: end of header -->
-## [Unreleased]
+
+## [0.1.2] - 2026-10-25
 
 ### Added
 
-- *(tui)* Show version in compact status border
+- Display the application version in the TUI status border.
 
 ### Fixed
 
-- *(ci)* Use supported version placeholder
+- Use a supported version placeholder when preparing release pull requests.
 
-### Changed
-
-- [Dependency Update]: bump toml in the cargo-dependencies group
-- [Dependency Update]: bump toml in the cargo-dependencies group
-- [CI Update]: bump jfrz38/check-version-change
-- [Dependency Update]: bump rand in the cargo-dependencies group
-- [CI Update]: bump jfrz38/check-version-change
-- [Dependency Update]: bump the cargo-dependencies group with 2 updates
-- [Dependency Update]: bump the cargo-dependencies group with 2 updates
-- Bump version to {new-version}
-- [Dependency Update]: bump the cargo-dependencies group with 2 updates
-- [CI Update]: bump jfrz38/check-version-change
-- *(ci)* Run dependabot monthly
-- [Dependency Update]: bump the cargo-dependencies group with 2 updates
 ## [0.1.1] - 2026-09-03
 
 ### Added
 
-- Increase map layout
-- Improve countries suggested
-- Add CODEOWNERS file with owner assignment
-
-### Fixed
-
-- Use correct version
+- Search for countries by any word in their name, with more relevant suggestions first.
+- Hide countries that have already been guessed from autocomplete suggestions.
 
 ### Changed
 
-- *(world-data)* Remove unused asset preview code
-- *(countries)* Remove Spanish Sahara name
-- Bump version to {new-version}
-- Add dependabot
-- Create lightweight tag
-- [CI Update]: bump the github-actions group with 3 updates
-- Fix invalid dependency bump
-- [Dependency Update]: bump the cargo-dependencies group with 3 updates
+- Give the map more space in wide terminal layouts.
+- Remove the obsolete "Spanish Sahara" country alias.
+
+### Fixed
+
+- Generate random targets and validate map checksums correctly with the updated dependencies.
+
 ## [0.1.0] - 2026-09-03
+
+Initial MVP release of WorldHunt, a terminal-based geography guessing game.
 
 ### Added
 
-- Add MIT License to the project
-- Add Rust terminal application foundation
-- Add world-data catalog validator
-- Add world map asset pipeline
-- Render the world map in the TUI
-- Add world detail asset generation
-- Add EH and IC to world map
-- Add country overlay map assets
-- Add zoomable TUI map navigation
-- *(world-data)* Add territorial proximity generator
-- *(world-data)* Add v2 proximity matrix asset
-- *(game-domain)* Add core game use cases and ports
-- *(tui)* Add theme-aware map rendering and docs updates
-- *(tui)* Add playable input flow and smoke test
-- *(tui)* Add country suggestions and recenter guesses
-- *(tui)* Add hints, surrender, and inline suggestions
-- Implement playable TUI with country catalog integration
-- *(tui)* Add rendered_guesses_for_map method to include target guess on surrender
-- Add asset link to README
-- Add CLI argument handling for help and version
-- *(countries)* Add Libya as playable name
+- Play a complete country-guessing game from the terminal, including hints, surrender, and starting a new game.
+- Navigate a zoomable, horizontally wrapping world map with country overlays and guess markers.
+- Search and autocomplete a catalog of 196 playable countries, including aliases and normalized input.
+- Recenter the map after each guess and show proximity feedback based on geographic distance.
+- Support compact and wide terminal layouts with theme-aware rendering.
+- Provide `--help` and `--version` command-line options.
+- Include the world-data generation and validation tools used to build the embedded map assets.
 
 ### Fixed
 
-- Handle antimeridian polygons in raster generation
-- *(world-data)* Anchor raster countries from source polygons
-- Update dependencies and fix TUI app integration issues
-- *(world-data)* Validate polygon rings and positions
-- Add infinite horizontal scroll
-- Allow hyphen for countries
+- Render polygons that cross the antimeridian correctly.
+- Anchor country rasters to their source polygons and validate polygon rings and positions.
+- Allow hyphens in country names.
+- Keep the map scrollable indefinitely in either horizontal direction.
 
-### Changed
-
-- Initial commit
-- Revise README with improved title and description
-- Rename project from Country Guess TUI to WorldHunt
-- Add project documentation
-- Add project quality automation
-- Document project foundation workflow
-- Move unit tests to separate files
-- Clarify test and iteration workflow
-- Mark iteration 001 complete and 002 active
-- Optimize pull request checks
-- Split world-data validation modules
-- Format code
-- Simplify map tile projection inputs
-- Update validation counts
-- Update 196-country catalog references
-- Update Web Mercator map docs and notices
-- Update distance calculation notes
-- Update world-data docs for v2 asset
-- *(iterations)* Update game domain status
-- *(tui)* Move map renderer tests to dedicated file
-- *(tui)* Move tests to dedicated file
-- Update TUI and iteration status
-- Update playable TUI documentation
-- Update playable TUI documentation
-- Move class tests into dedicated modules
-- Update hardening docs and runtime contract
-- Expand hardening coverage
-- Prepare documentation and metadata for MVP release
-- Add GitHub workflows and validation scripts for release
-- Configure workspace publishing and exclude tools
-- Improve release asnd use check-version-change
-- Improve readme
-- Remove technical documentation
-- Improve documentation
-- Improve release pipeline adding quality checks
-- Improve script verification
-- Update Cargo.toml dependencies and include files
-- Update OpenStreetMap metadata for zoom-1 basemap
+[0.1.2]: https://github.com/jfrz38/worldhunt/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/jfrz38/worldhunt/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/jfrz38/worldhunt/releases/tag/v0.1.0
