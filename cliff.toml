@@ -1,0 +1,74 @@
+# git-cliff configuration
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+header_marker = "<!-- git-cliff: end of header -->"
+header = """
+# Changelog
+
+All notable changes to WorldHunt are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+<!-- git-cliff: end of header -->
+"""
+body = """
+{% if version %}\
+    ## [{{ version | trim_start_matches(pat="v") }}](https://github.com/jfrz38/worldhunt/releases/tag/{{ version }}) - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+    ## Unreleased
+{% endif %}\
+{% for entry in commits | commit_groups(groups=commit_parsers_groups) %}
+    ### {{ entry.group | striptags | trim | upper_first }}
+    {% for commit in entry.commits %}
+        - {% if commit.scope %}**{{ commit.scope }}:** {% endif %}\
+            {% if commit.breaking %}**Breaking:** {% endif %}\
+            {{ commit.message | upper_first }}.\
+    {% endfor %}
+{% endfor %}
+"""
+trim = true
+render_always = true
+
+[git]
+conventional_commits = true
+filter_unconventional = false
+require_conventional = false
+split_commits = false
+commit_preprocessors = [
+    # Changelog entries should contain only the commit subject.
+    { pattern = '(?s)^([^\n]*).*', replace = '$1' },
+]
+protect_breaking_commits = true
+commit_parsers = [
+    # Ignore repository maintenance before the broad type-based rules.
+    { message = "^Merge (pull request|branch)", skip = true },
+    # v0.1.2 was tagged on main rather than develop, so exclude its released
+    # commits when --use-branch-tags calculates the next release from develop.
+    { sha = "17e4ee74ccf2dcb2e0796e2dcefb00a985cf9577", skip = true },
+    { sha = "283f39616d5b5be8bd16b65117f730573459d790", skip = true },
+    { message = "^\\[Dependency Update\\]", skip = true },
+    { message = "^\\[CI Update\\]", skip = true },
+    { message = "^chore(\\([^)]*\\))?: (bump version|add git-cliff)", skip = true },
+    { message = "^(docs?|test|style|chore|ci|build|config)(\\([^)]*\\))?!?:", skip = true },
+
+    # Keep the generated changelog focused on changes relevant to users.
+    { body = "(?i).*security", group = "<!-- 4 -->Security" },
+    { message = "^feat", group = "<!-- 0 -->Added" },
+    { message = "^fix", group = "<!-- 2 -->Fixed" },
+    { message = "^(perf|refactor)", group = "<!-- 1 -->Changed" },
+    { message = "^(remove|revert)", group = "<!-- 3 -->Removed" },
+    { message = "(?i)^add", group = "<!-- 0 -->Added" },
+    { message = "(?i)^fix", group = "<!-- 2 -->Fixed" },
+    { message = "(?i)^remove", group = "<!-- 3 -->Removed" },
+    { message = ".*", group = "<!-- 1 -->Changed" },
+]
+filter_commits = false
+fail_on_unmatched_commit = false
+link_parsers = []
+use_branch_tags = false
+topo_order = false
+topo_order_commits = true
+sort_commits = "oldest"
+recurse_submodules = false
